@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bella&Bona – Offer Generator</title>
+<style>
+:root {
+  --green:#024930; --green-mid:#1A6645; --lime:#E0EA68; --lime-light:#F9FEEC;
+  --lime-mid:#E6FFA9; --cream:#F8F7F6; --white:#FFFFFF; --border:#DDE8D8;
+  --gray:#6B7A6B; --dark:#111F16; --red:#C0392B; --font:-apple-system,'Segoe UI',Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--cream);color:var(--dark);min-height:100vh}
+
+/* ── LAYOUT ── */
+.app{display:flex;min-height:100vh}
+.sidebar{width:500px;min-width:500px;background:var(--white);border-right:2px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+.preview-pane{flex:1;background:#D8E8D4;padding:28px;overflow-y:auto}
+
+/* ── SIDEBAR HEADER ── */
+.sidebar-header{background:var(--green);padding:18px 22px 14px;display:flex;align-items:center;justify-content:space-between}
+.sidebar-header img.bb-logo{height:28px;filter:brightness(0) invert(1)}
+.sidebar-header .badge-tag{background:var(--lime);color:var(--green);font-size:10px;font-weight:800;letter-spacing:1.5px;padding:4px 10px;border-radius:20px;text-transform:uppercase}
+
+/* ── SECTIONS ── */
+.section{border-bottom:1px solid var(--border)}
+.section-title{background:var(--cream);padding:10px 18px;font-size:10px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;color:var(--green);cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;transition:background .15s}
+.section-title:hover{background:var(--lime-light)}
+.section-body{padding:13px 18px;display:flex;flex-direction:column;gap:9px}
+.section-body.collapsed{display:none}
+
+/* ── FORM ── */
+.row{display:flex;gap:8px}
+.row .field{flex:1}
+.field{display:flex;flex-direction:column;gap:3px}
+.field label{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.8px}
+.field input,.field select,.field textarea{border:1.5px solid var(--border);border-radius:6px;padding:7px 9px;font-size:13px;font-family:var(--font);background:var(--white);transition:border-color .2s,box-shadow .2s;color:var(--dark)}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(2,73,48,.08)}
+.field textarea{resize:vertical;min-height:60px}
+
+/* ── ITEM CARDS ── */
+.item-card{background:var(--cream);border:1.5px solid var(--border);border-radius:8px;padding:10px 11px;margin-bottom:7px;position:relative}
+.item-card:hover{border-color:#b5cdb5}
+.item-row1{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;margin-bottom:7px}
+.item-name-input{border:1.5px solid var(--border);border-radius:5px;padding:6px 8px;font-size:13px;font-family:var(--font);background:var(--white);width:100%;font-weight:600}
+.item-name-input:focus{outline:none;border-color:var(--green)}
+.item-row2{display:grid;grid-template-columns:1fr 68px 72px 80px 80px;gap:6px;align-items:center}
+.item-row3{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-top:6px}
+.item-desc-input{border:1.5px solid var(--border);border-radius:5px;padding:5px 8px;font-size:11.5px;font-family:var(--font);background:var(--white);width:100%;color:#666}
+.item-desc-input:focus{outline:none;border-color:var(--green)}
+.item-row2 input,.item-row2 select{border:1.5px solid var(--border);border-radius:5px;padding:5px 6px;font-size:12px;font-family:var(--font);background:var(--white);width:100%}
+.item-row2 input:focus,.item-row2 select:focus{outline:none;border-color:var(--green)}
+.item-total-badge{font-size:12px;font-weight:800;color:var(--green);white-space:nowrap;padding:5px 8px;background:var(--lime-light);border-radius:5px;text-align:right}
+.item-del{position:absolute;top:8px;right:8px;background:none;border:1px solid #ddd;border-radius:4px;width:22px;height:22px;cursor:pointer;color:#bbb;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.item-del:hover{background:#ffeaea;border-color:var(--red);color:var(--red)}
+.item-label{font-size:9.5px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px}
+.diet-badge{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:12px;margin-left:4px}
+
+.btn-add{background:var(--lime-light);color:var(--green);border:1.5px dashed var(--green);border-radius:6px;padding:8px;font-size:12.5px;font-weight:700;cursor:pointer;width:100%;margin-top:2px;transition:all .2s}
+.btn-add:hover{background:var(--lime);border-style:solid}
+
+/* ── PRICING ── */
+.pricing-grid{display:flex;flex-direction:column;gap:5px}
+.pricing-row{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.pricing-row.total{font-size:16px;font-weight:800;color:var(--green);border-top:2px solid var(--green);padding-top:7px;margin-top:4px}
+.pricing-row.vat{color:var(--gray);font-size:12px}
+.pricing-row.discount{color:var(--red)}
+.pricing-value{font-weight:600}
+
+/* ── ACTIONS ── */
+.actions{padding:14px 18px;display:flex;flex-direction:column;gap:7px}
+.btn-primary{background:var(--green);color:var(--white);border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:800;cursor:pointer;transition:background .2s}
+.btn-primary:hover{background:var(--green-mid)}
+.btn-lime{background:var(--lime);color:var(--green);border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:800;cursor:pointer;transition:background .2s}
+.btn-lime:hover{background:#cdd85e}
+.btn-outline{background:var(--white);color:var(--dark);border:1.5px solid var(--border);border-radius:8px;padding:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-outline:hover{border-color:var(--green);color:var(--green);background:var(--lime-light)}
+.copy-success{display:none;color:var(--green);font-size:12px;font-weight:700;text-align:center;background:var(--lime-light);padding:7px;border-radius:6px}
+
+/* ══════════ OFFER PREVIEW ══════════ */
+.offer-preview{background:var(--white);border-radius:4px;box-shadow:0 6px 32px rgba(2,73,48,.18);max-width:820px;margin:0 auto}
+.offer-top{background:var(--green);padding:32px 44px 26px;display:flex;justify-content:space-between;align-items:flex-start}
+.offer-top .logo-block img{height:32px;filter:brightness(0) invert(1)}
+.offer-top .logo-block .tagline{color:var(--lime);font-size:9.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-top:5px}
+.offer-meta-block{text-align:right}
+.offer-meta-block .offer-label{font-size:8.5px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--lime);margin-bottom:3px}
+.offer-meta-block .offer-num{font-size:24px;font-weight:900;color:var(--white);letter-spacing:1px;line-height:1}
+.offer-meta-block .offer-dates{font-size:11.5px;color:rgba(255,255,255,.65);margin-top:7px;line-height:1.9}
+.offer-meta-block .offer-by{font-size:10.5px;color:var(--lime);margin-top:3px}
+.lime-strip{background:var(--lime);padding:9px 44px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lime-strip .event-title{font-size:14px;font-weight:800;color:var(--green)}
+.lime-strip .event-meta{font-size:11px;color:var(--green-mid);margin-left:auto;display:flex;gap:12px;flex-wrap:wrap}
+.lime-strip .event-meta span::before{content:'📅 '}
+.lime-strip .event-meta span.loc::before{content:'📍 '}
+.lime-strip .event-meta span.pax::before{content:'👥 '}
+.offer-body{padding:28px 44px}
+.offer-section-title{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--green);border-bottom:1.5px solid var(--lime);padding-bottom:4px;margin-bottom:12px;margin-top:24px}
+.offer-section-title:first-child{margin-top:0}
+.offer-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.offer-field label{font-size:8.5px;text-transform:uppercase;letter-spacing:1px;color:var(--gray);display:block;margin-bottom:2px}
+.offer-field span{font-size:13px;color:var(--dark);font-weight:500}
+.offer-items{width:100%;border-collapse:collapse;font-size:12px}
+.offer-items thead tr{background:var(--green)}
+.offer-items thead th{padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:1px;font-weight:700;color:var(--lime)}
+.offer-items thead th:last-child{text-align:right}
+.offer-items tbody tr{border-bottom:1px solid var(--border)}
+.offer-items tbody tr:last-child{border-bottom:none}
+.offer-items td{padding:9px 10px;vertical-align:top}
+.offer-items td:last-child{text-align:right;font-weight:700;color:var(--green)}
+.offer-items td .item-name{font-weight:700;color:var(--dark)}
+.offer-items td .item-desc{font-size:10.5px;color:var(--gray);margin-top:2px}
+.offer-items tbody tr:nth-child(even){background:var(--lime-light)}
+.offer-totals{margin-top:18px;display:flex;justify-content:flex-end}
+.totals-box{width:280px;border:1.5px solid var(--border);border-radius:8px;overflow:hidden}
+.totals-row{display:flex;justify-content:space-between;padding:7px 13px;font-size:12.5px;border-bottom:1px solid var(--border);background:var(--white)}
+.totals-row:last-child{border-bottom:none;background:var(--green);color:var(--white);font-size:14px;font-weight:900;padding:10px 13px}
+.totals-row:last-child span:last-child{color:var(--lime)}
+.totals-row.discount{color:var(--red)}
+.totals-row.vat{color:var(--gray);font-size:11.5px}
+.offer-notes{background:var(--lime-light);border-left:3px solid var(--lime);padding:12px 14px;font-size:12px;line-height:1.75;color:var(--dark);margin-top:5px;border-radius:0 5px 5px 0;white-space:pre-wrap}
+.offer-terms{font-size:11px;color:var(--gray);line-height:1.75;margin-top:5px}
+.offer-footer{background:var(--green);padding:16px 44px;display:flex;justify-content:space-between;align-items:center}
+.offer-footer .footer-contact{font-size:11px;color:rgba(255,255,255,.65);line-height:1.9}
+.offer-footer .footer-contact strong{color:var(--lime);display:block;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;margin-bottom:1px}
+.offer-footer .validity{text-align:right;font-size:10px;color:var(--lime);font-weight:700;letter-spacing:.5px}
+
+/* ══════════ AI CHAT WIDGET ══════════ */
+#chatBubble{position:fixed;bottom:24px;right:24px;width:52px;height:52px;background:var(--green);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(2,73,48,.4);z-index:1000;transition:transform .2s,box-shadow .2s;border:3px solid var(--lime)}
+#chatBubble:hover{transform:scale(1.08);box-shadow:0 6px 28px rgba(2,73,48,.5)}
+#chatBubble svg{width:24px;height:24px;fill:var(--lime)}
+#chatBubble .notif{position:absolute;top:-3px;right:-3px;width:14px;height:14px;background:var(--lime);border-radius:50%;display:none;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:var(--green)}
+
+#chatPanel{position:fixed;bottom:88px;right:24px;width:400px;height:560px;background:var(--white);border-radius:16px;box-shadow:0 12px 48px rgba(0,0,0,.18);z-index:999;display:none;flex-direction:column;overflow:hidden;border:1.5px solid var(--border)}
+#chatPanel.open{display:flex}
+
+.chat-header{background:var(--green);padding:14px 16px;display:flex;align-items:center;gap:10px}
+.chat-header .chat-avatar{width:36px;height:36px;background:var(--lime);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.chat-header .chat-info .chat-name{font-size:13px;font-weight:800;color:var(--white)}
+.chat-header .chat-info .chat-sub{font-size:10.5px;color:rgba(255,255,255,.65)}
+.chat-header .chat-settings{margin-left:auto;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.65);font-size:18px;padding:0;display:flex;align-items:center}
+.chat-header .chat-settings:hover{color:var(--lime)}
+.chat-header .chat-close{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.65);font-size:20px;padding:0 0 0 8px;display:flex;align-items:center}
+.chat-header .chat-close:hover{color:var(--white)}
+
+/* API Key Setup */
+#chatSetup{padding:20px;display:none;flex-direction:column;gap:12px;border-bottom:1px solid var(--border)}
+#chatSetup.visible{display:flex}
+#chatSetup .setup-label{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.8px}
+#chatSetup input{border:1.5px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12.5px;font-family:var(--font);background:var(--cream);width:100%}
+#chatSetup input:focus{outline:none;border-color:var(--green)}
+#chatSetup .save-key-btn{background:var(--green);color:var(--white);border:none;border-radius:6px;padding:8px;font-size:12.5px;font-weight:700;cursor:pointer}
+#chatSetup .save-key-btn:hover{background:var(--green-mid)}
+.key-status{font-size:11px;color:var(--green);font-weight:600;display:none}
+.key-status.show{display:block}
+
+/* Messages */
+#chatMessages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.msg{display:flex;flex-direction:column;gap:4px;max-width:92%}
+.msg.user{align-self:flex-end}
+.msg.ai{align-self:flex-start}
+.msg-bubble{padding:9px 12px;border-radius:12px;font-size:12.5px;line-height:1.6}
+.msg.user .msg-bubble{background:var(--green);color:var(--white);border-bottom-right-radius:4px}
+.msg.ai .msg-bubble{background:var(--cream);color:var(--dark);border-bottom-left-radius:4px;border:1px solid var(--border)}
+.msg-time{font-size:9.5px;color:#aaa;padding:0 4px}
+.msg.user .msg-time{text-align:right}
+
+/* AI suggestion cards */
+.suggestion-card{background:var(--white);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;margin-top:4px}
+.suggestion-card .s-name{font-size:13px;font-weight:800;color:var(--dark);margin-bottom:2px}
+.suggestion-card .s-desc{font-size:11px;color:var(--gray);margin-bottom:6px;line-height:1.5}
+.suggestion-card .s-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.s-badge{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px}
+.s-badge.type-pp{background:#E6FFA9;color:#024930}
+.s-badge.type-fixed{background:#EFF8E8;color:#1A6645}
+.s-badge.diet-vegan{background:#D4EDDA;color:#155724}
+.s-badge.diet-vegetarian{background:#FFF3CD;color:#856404}
+.s-badge.diet-halal{background:#D1ECF1;color:#0c5460}
+.s-badge.diet-kosher{background:#E8D5F5;color:#5A1282}
+.s-badge.diet-gf{background:#FCE8D5;color:#7A3300}
+.s-badge.diet-omni{background:#F0F0F0;color:#444}
+.s-badge.diet-fish{background:#CCE5FF;color:#004085}
+.s-price{font-size:12px;font-weight:700;color:var(--green)}
+.add-to-offer-btn{background:var(--lime);color:var(--green);border:none;border-radius:6px;padding:5px 10px;font-size:11.5px;font-weight:800;cursor:pointer;transition:background .2s;width:100%}
+.add-to-offer-btn:hover{background:#cdd85e}
+.add-to-offer-btn.added{background:#E6FFA9;color:var(--green-mid);cursor:default}
+
+/* Chat input area */
+.chat-input-area{padding:12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+#chatInput{border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;font-size:12.5px;font-family:var(--font);resize:none;min-height:70px;max-height:120px;background:var(--white);transition:border-color .2s}
+#chatInput:focus{outline:none;border-color:var(--green)}
+.chat-input-footer{display:flex;gap:6px;align-items:center}
+.chat-send-btn{background:var(--green);color:var(--white);border:none;border-radius:7px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .2s}
+.chat-send-btn:hover{background:var(--green-mid)}
+.chat-send-btn:disabled{background:#bbb;cursor:not-allowed}
+.chat-clear-btn{background:none;border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:11.5px;cursor:pointer;color:var(--gray)}
+.chat-clear-btn:hover{border-color:var(--green);color:var(--green)}
+.chat-hint{font-size:10.5px;color:var(--gray);line-height:1.5}
+.typing-indicator{display:flex;gap:4px;align-items:center;padding:10px 12px}
+.typing-indicator span{width:7px;height:7px;background:var(--green);border-radius:50%;animation:bounce .9s infinite}
+.typing-indicator span:nth-child(2){animation-delay:.2s}
+.typing-indicator span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+/* ── PRINT ── */
+@media print{.sidebar,.chat-bubble-wrap{display:none}.app{display:block}.preview-pane{background:white;padding:0}.offer-preview{box-shadow:none;max-width:100%}body{background:white}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:960px){.app{flex-direction:column}.sidebar{width:100%;min-width:unset}.preview-pane{padding:16px}.offer-top,.offer-body,.offer-footer{padding-left:24px;padding-right:24px}.lime-strip{padding-left:24px;padding-right:24px}.offer-grid-2{grid-template-columns:1fr}#chatPanel{width:calc(100vw - 32px);right:16px}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ══════ SIDEBAR ══════ -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <img class="bb-logo" src="https://bellabona.com/hubfs/logo-bellabona.svg" alt="Bella&Bona" onerror="this.outerHTML='<span style=\'color:white;font-size:18px;font-weight:900;letter-spacing:2px\'>BELLA&amp;BONA</span>'">
+      <span class="badge-tag">Offer Generator</span>
+    </div>
+
+    <!-- OFFER DETAILS -->
+    <div class="section">
+      <div class="section-title" onclick="toggle(this)">Offer Details <span>▾</span></div>
+      <div class="section-body">
+        <div class="row">
+          <div class="field"><label>Offer Number</label><input type="text" id="offerNumber" placeholder="BB-2026-001" oninput="render()"></div>
+          <div class="field"><label>Offer Date</label><input type="date" id="offerDate" oninput="render()"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>Valid Until</label><input type="date" id="validUntil" oninput="render()"></div>
+          <div class="field"><label>Created By</label><input type="text" id="createdBy" placeholder="Your name" oninput="render()"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CUSTOMER -->
+    <div class="section">
+      <div class="section-title" onclick="toggle(this)">Customer Details <span>▾</span></div>
+      <div class="section-body">
+        <div class="field"><label>Company / Organization</label><input type="text" id="company" placeholder="e.g. Moonfare GmbH" oninput="render()"></div>
+        <div class="row">
+          <div class="field"><label>Contact Person</label><input type="text" id="contactName" placeholder="Max Mustermann" oninput="render()"></div>
+          <div class="field"><label>Title / Role</label><input type="text" id="contactTitle" placeholder="Event Manager" oninput="render()"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>Email</label><input type="email" id="contactEmail" placeholder="max@company.com" oninput="render()"></div>
+          <div class="field"><label>Phone</label><input type="tel" id="contactPhone" placeholder="+49 …" oninput="render()"></div>
+        </div>
+        <div class="field"><label>Billing Address</label><textarea id="billingAddress" placeholder="Street, City, ZIP" rows="2" oninput="render()"></textarea></div>
+      </div>
+    </div>
+
+    <!-- EVENT -->
+    <div class="section">
+      <div class="section-title" onclick="toggle(this)">Event Details <span>▾</span></div>
+      <div class="section-body">
+        <div class="field"><label>Event Name / Type</label><input type="text" id="eventName" placeholder="e.g. Summer BBQ 2026" oninput="render()"></div>
+        <div class="row">
+          <div class="field"><label>Date</label><input type="date" id="eventDate" oninput="render()"></div>
+          <div class="field"><label>End Date (multi-day)</label><input type="date" id="eventDateEnd" oninput="render()"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>Time</label><input type="text" id="eventTime" placeholder="12:00 – 16:00" oninput="render()"></div>
+          <div class="field"><label>Number of Guests</label><input type="number" id="guestCount" placeholder="120" min="1" oninput="render()"></div>
+        </div>
+        <div class="field"><label>Venue / Location</label><input type="text" id="venue" placeholder="e.g. Spreeufer 4, 10178 Berlin" oninput="render()"></div>
+        <div class="field"><label>Setup / Service Info</label><input type="text" id="setupInfo" placeholder="e.g. outdoor, own BBQ grills, 2 chefs on-site" oninput="render()"></div>
+      </div>
+    </div>
+
+    <!-- ITEMS -->
+    <div class="section">
+      <div class="section-title" onclick="toggle(this)">Menu & Services <span>▾</span></div>
+      <div class="section-body">
+        <div id="itemsContainer"></div>
+        <button class="btn-add" onclick="addItem()">+ Add Item / Package</button>
+      </div>
+    </div>
+
+    <!-- PRICING -->
+    <div class="section">
+      <div class="section-title" onclick="toggle(this)">Pricing Summary <span>▾</span></div>
+      <div class="section-body">
+        <div class="row">
+          <div class="field">
+            <label>Discount Type</label>
+            <select id="discountType" onchange="render()">
+              <option value="none">No Discount</option>
+              <option value="percent">Percentage (%)</option>
+              <option value="fixed">Fixed Amount (€)</option>
+            </select>
+          </div>
+          <div class="field"><label>Discount Value</label><input type="number" id="discountValue" placeholder="0" min="0" step="0.01" oninput="render()"></div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>VAT Rate</label>
+            <select id="vatRate" onchange="render()">
+              <option value="19">19% MwSt</option>
+              <option value="7">7% MwSt</option>
+              <option value="0">0% (Steuerbefreit)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Currency</label>
+            <select id="currency" onchange="render()">
+              <option value="€">EUR (€)</option>
+              <option value="CHF">CHF</option>
+              <option value="$">USD ($)</option>
+            </select>
+          </div>
+        </div>
+        <div class="pricing-grid" id="pricingSummary"></div>
+      </div>
+    </div>
+
+    <!-- NOTES & TERMS -->
+    <div class="section">
+      <div class="section-title" onclick="toggle(this)">Notes & Terms <span>▾</span></div>
+      <div class="section-body">
+        <div class="field"><label>Special Notes / Inclusions</label><textarea id="notes" rows="3" placeholder="What's included, dietary options, logistics…" oninput="render()"></textarea></div>
+        <div class="field"><label>Payment Terms</label><input type="text" id="paymentTerms" placeholder="e.g. 50% deposit on booking, balance 14 days before event" oninput="render()"></div>
+        <div class="field"><label>Cancellation Policy</label><textarea id="cancellationPolicy" rows="2" placeholder="e.g. &lt;7 days: 100%, &lt;14 days: 50%…" oninput="render()"></textarea></div>
+        <div class="field"><label>Internal Notes (not printed)</label><textarea id="internalNotes" rows="2" placeholder="Margin notes, source, follow-up…" oninput="render()"></textarea></div>
+      </div>
+    </div>
+
+    <!-- CONTACT -->
+    <div class="section">
+      <div class="section-title" onclick="toggle(this)">Your Contact Info <span>▾</span></div>
+      <div class="section-body">
+        <div class="row">
+          <div class="field"><label>Email</label><input type="email" id="bbEmail" value="hello@bellabona.com" oninput="render()"></div>
+          <div class="field"><label>Phone</label><input type="tel" id="bbPhone" value="+49 30 …" oninput="render()"></div>
+        </div>
+        <div class="field"><label>Website</label><input type="text" id="bbWebsite" value="www.bellabona.com" oninput="render()"></div>
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="actions">
+      <button class="btn-primary" onclick="printOffer()">🖨 Print / Save as PDF</button>
+      <button class="btn-lime" onclick="copyText()">📋 Copy Offer as Text</button>
+      <div class="copy-success" id="copySuccess">✓ Copied to clipboard!</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-outline" style="flex:1" onclick="saveToLocal()">💾 Save Draft</button>
+        <button class="btn-outline" style="flex:1" onclick="loadFromLocal()">📂 Load Draft</button>
+        <button class="btn-outline" style="flex:1" onclick="resetForm()">↺ New</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ PREVIEW ══════ -->
+  <div class="preview-pane">
+    <div class="offer-preview" id="offerPreview"></div>
+  </div>
+</div>
+
+<!-- ══════════════ AI CHAT WIDGET ══════════════ -->
+<div id="chatBubble" onclick="toggleChat()" title="AI Menu Assistant">
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 10H6v-2h12v2zm0-3H6V7h12v2z"/></svg>
+  <div class="notif" id="chatNotif">!</div>
+</div>
+
+<div id="chatPanel">
+  <div class="chat-header">
+    <div class="chat-avatar">🤖</div>
+    <div class="chat-info">
+      <div class="chat-name">Menu AI Assistant</div>
+      <div class="chat-sub">Paste a customer email → get menu suggestions</div>
+    </div>
+    <button class="chat-settings" onclick="toggleSetup()" title="API Settings">⚙</button>
+    <button class="chat-close" onclick="toggleChat()">✕</button>
+  </div>
+
+  <!-- API KEY SETUP -->
+  <div id="chatSetup">
+    <div class="setup-label">Anthropic API Key</div>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-…" autocomplete="off">
+    <button class="save-key-btn" onclick="saveApiKey()">Save Key</button>
+    <div class="key-status" id="keyStatus">✓ API key saved</div>
+    <div style="font-size:10.5px;color:var(--gray);line-height:1.5">Your key is stored locally in this browser only. Never sent anywhere except directly to Anthropic's API.</div>
+  </div>
+
+  <div id="chatMessages">
+    <div class="msg ai">
+      <div class="msg-bubble">👋 Hi! I'm your menu assistant. Paste a customer email or describe the event requirements, and I'll suggest the perfect menu items for your offer.<br><br>Make sure to set your API key via ⚙ first.</div>
+      <div class="msg-time">Ready</div>
+    </div>
+  </div>
+
+  <div class="chat-input-area">
+    <textarea id="chatInput" placeholder="Paste customer email or describe the event here…&#10;e.g. 'Summer BBQ for 80 people, July 2, outdoor, Munich, budget €8000, mix of vegetarians and meat eaters…'"></textarea>
+    <div class="chat-input-footer">
+      <button class="chat-send-btn" id="sendBtn" onclick="sendMessage()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+        Suggest Menu
+      </button>
+      <button class="chat-clear-btn" onclick="clearChat()">Clear</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+let items = [], itemCounter = 0;
+const DIET_LABELS = {omni:'🥩 Omnivore', vegetarian:'🥗 Vegetarian', vegan:'🌱 Vegan', halal:'☪️ Halal', kosher:'✡️ Kosher', gf:'🌾 Gluten-free', fish:'🐟 Fish/Seafood', mixed:'🍽 Mixed'};
+const DIET_CLASS = {omni:'diet-omni', vegetarian:'diet-vegetarian', vegan:'diet-vegan', halal:'diet-halal', kosher:'diet-kosher', gf:'diet-gf', fish:'diet-fish', mixed:'diet-omni'};
+
+function v(id){ const e=document.getElementById(id); return e?e.value:''; }
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmt(n){ return Number(n).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function cur(){ return v('currency')||'€'; }
+function fmtDate(d){ if(!d)return''; const[y,m,day]=d.split('-'); return`${day}.${m}.${y}`; }
+function toggle(el){ const b=el.nextElementSibling; b.classList.toggle('collapsed'); el.querySelector('span').textContent=b.classList.contains('collapsed')?'▸':'▾'; }
+
+// ── ITEMS ──
+function addItem(name='',desc='',type='per_person',qty=1,unitPrice=0,portions=0,dietType='omni'){
+  const id=itemCounter++; items.push({id,name,desc,type,qty,unitPrice,portions,dietType}); renderItems(); render();
+}
+function removeItem(id){ items=items.filter(i=>i.id!==id); renderItems(); render(); }
+function lineTotal(item){ const g=parseInt(v('guestCount'))||1; return item.type==='per_person'?item.qty*item.unitPrice*g:item.qty*item.unitPrice; }
+
+function renderItems(){
+  const c=document.getElementById('itemsContainer'); c.innerHTML='';
+  items.forEach(item=>{
+    const card=document.createElement('div'); card.className='item-card';
+    card.innerHTML=`
+      <button class="item-del" onclick="removeItem(${item.id})">×</button>
+      <div class="item-row1">
+        <input class="item-name-input" type="text" value="${esc(item.name)}" placeholder="Item / Package name" oninput="items.find(i=>i.id==${item.id}).name=this.value;render()">
+      </div>
+      <div class="item-row2">
+        <div>
+          <div class="item-label">Type</div>
+          <select onchange="items.find(i=>i.id==${item.id}).type=this.value;render()">
+            <option value="per_person" ${item.type==='per_person'?'selected':''}>/ person</option>
+            <option value="fixed" ${item.type==='fixed'?'selected':''}>Fixed</option>
+          </select>
+        </div>
+        <div>
+          <div class="item-label">Qty</div>
+          <input type="number" value="${item.qty}" min="0" step="0.5" placeholder="1" oninput="items.find(i=>i.id==${item.id}).qty=parseFloat(this.value)||0;render()">
+        </div>
+        <div>
+          <div class="item-label">Portions</div>
+          <input type="number" value="${item.portions||''}" min="0" placeholder="auto" oninput="items.find(i=>i.id==${item.id}).portions=parseInt(this.value)||0;render()">
+        </div>
+        <div>
+          <div class="item-label">Unit €</div>
+          <input type="number" value="${item.unitPrice||''}" min="0" step="0.5" placeholder="0.00" oninput="items.find(i=>i.id==${item.id}).unitPrice=parseFloat(this.value)||0;render()">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <div class="item-label">Total</div>
+          <div class="item-total-badge" data-it="${item.id}">${cur()} ${fmt(lineTotal(item))}</div>
+        </div>
+      </div>
+      <div class="item-row3">
+        <input class="item-desc-input" type="text" value="${esc(item.desc)}" placeholder="Description (optional)" oninput="items.find(i=>i.id==${item.id}).desc=this.value;render()">
+        <div>
+          <div class="item-label">Diet Type</div>
+          <select style="border:1.5px solid var(--border);border-radius:5px;padding:5px 6px;font-size:11.5px;font-family:var(--font);background:var(--white)" onchange="items.find(i=>i.id==${item.id}).dietType=this.value;render()">
+            ${Object.entries(DIET_LABELS).map(([k,lbl])=>`<option value="${k}" ${item.dietType===k?'selected':''}>${lbl}</option>`).join('')}
+          </select>
+        </div>
+      </div>`;
+    c.appendChild(card);
+  });
+}
+
+// ── PRICING ──
+function calcPricing(){
+  const subtotal=items.reduce((s,i)=>s+lineTotal(i),0);
+  let discount=0; const dt=v('discountType'),dv=parseFloat(v('discountValue'))||0;
+  if(dt==='percent') discount=subtotal*dv/100; else if(dt==='fixed') discount=dv;
+  const net=Math.max(0,subtotal-discount), vatRate=parseFloat(v('vatRate'))||0, vat=net*vatRate/100;
+  return{subtotal,discount,net,vat,vatRate,gross:net+vat};
+}
+function renderPricingSummary(){
+  const p=calcPricing(),c=cur(),dt=v('discountType'),dv=parseFloat(v('discountValue'))||0;
+  let h=`<div class="pricing-row"><span>Subtotal (netto)</span><span class="pricing-value">${c} ${fmt(p.subtotal)}</span></div>`;
+  if(p.discount>0){ h+=`<div class="pricing-row discount"><span>Discount${dt==='percent'?` (${dv}%)`:''}</span><span class="pricing-value">− ${c} ${fmt(p.discount)}</span></div><div class="pricing-row"><span>Net after discount</span><span class="pricing-value">${c} ${fmt(p.net)}</span></div>`; }
+  h+=`<div class="pricing-row vat"><span>MwSt ${p.vatRate}%</span><span class="pricing-value">${c} ${fmt(p.vat)}</span></div>`;
+  h+=`<div class="pricing-row total"><span>TOTAL</span><span class="pricing-value">${c} ${fmt(p.gross)}</span></div>`;
+  document.getElementById('pricingSummary').innerHTML=h;
+}
+
+// ── RENDER PREVIEW ──
+function render(){
+  renderPricingSummary();
+  items.forEach(item=>{ const el=document.querySelector(`[data-it="${item.id}"]`); if(el) el.textContent=`${cur()} ${fmt(lineTotal(item))}`; });
+  const p=calcPricing(),c=cur(),g=parseInt(v('guestCount'))||0;
+  const dt=v('discountType'),dv=parseFloat(v('discountValue'))||0;
+  let ed=fmtDate(v('eventDate'));
+  if(v('eventDateEnd')&&v('eventDateEnd')!==v('eventDate')) ed+=` – ${fmtDate(v('eventDateEnd'))}`;
+  let metaSpans='';
+  if(ed) metaSpans+=`<span>${ed}${v('eventTime')?' · '+v('eventTime'):''}</span>`;
+  if(v('venue')) metaSpans+=`<span class="loc">${esc(v('venue'))}</span>`;
+  if(g) metaSpans+=`<span class="pax">${g} Personen</span>`;
+
+  let itemRows='';
+  items.forEach(item=>{
+    const lt=lineTotal(item);
+    const portions=item.portions||(item.type==='per_person'?item.qty*g:item.qty);
+    const bd=item.type==='per_person'?`${item.qty} × ${c}${fmt(item.unitPrice)} × ${g} PAX`:`${item.qty} × ${c}${fmt(item.unitPrice)}`;
+    const typeBadge=item.type==='per_person'?`<span style="font-size:9px;background:#E6FFA9;color:#024930;padding:1px 5px;border-radius:8px;font-weight:700">/Person</span>`:`<span style="font-size:9px;background:#EFF8E8;color:#1A6645;padding:1px 5px;border-radius:8px;font-weight:700">Fixed</span>`;
+    const dietLabel=DIET_LABELS[item.dietType]||'';
+    const dietColor={omni:'#F0F0F0',vegetarian:'#FFF3CD',vegan:'#D4EDDA',halal:'#D1ECF1',kosher:'#E8D5F5',gf:'#FCE8D5',fish:'#CCE5FF',mixed:'#F0F0F0'}[item.dietType]||'#F0F0F0';
+    const dietText={omni:'#444',vegetarian:'#856404',vegan:'#155724',halal:'#0c5460',kosher:'#5A1282',gf:'#7A3300',fish:'#004085',mixed:'#444'}[item.dietType]||'#444';
+    itemRows+=`<tr>
+      <td><div class="item-name">${esc(item.name)||'—'}</div>${item.desc?`<div class="item-desc">${esc(item.desc)}</div>`:''}</td>
+      <td>${typeBadge}</td>
+      <td style="text-align:center">${portions}</td>
+      <td><span style="font-size:9.5px;background:${dietColor};color:${dietText};padding:2px 6px;border-radius:8px;font-weight:700">${dietLabel}</span></td>
+      <td>${c} ${fmt(item.unitPrice)}</td>
+      <td style="color:#666;font-size:10.5px">${bd}</td>
+      <td>${c} ${fmt(lt)}</td>
+    </tr>`;
+  });
+
+  let totalsRows=`<div class="totals-row"><span>Netto Subtotal</span><span>${c} ${fmt(p.subtotal)}</span></div>`;
+  if(p.discount>0) totalsRows+=`<div class="totals-row discount"><span>Discount${dt==='percent'?` ${dv}%`:''}</span><span>− ${c} ${fmt(p.discount)}</span></div><div class="totals-row"><span>Net after Discount</span><span>${c} ${fmt(p.net)}</span></div>`;
+  totalsRows+=`<div class="totals-row vat"><span>MwSt ${p.vatRate}%</span><span>${c} ${fmt(p.vat)}</span></div>`;
+  totalsRows+=`<div class="totals-row"><span>TOTAL (brutto)</span><span>${c} ${fmt(p.gross)}</span></div>`;
+
+  const notes=v('notes'),payment=v('paymentTerms'),cancel=v('cancellationPolicy');
+  document.getElementById('offerPreview').innerHTML=`
+    <div class="offer-top">
+      <div class="logo-block">
+        <img src="https://bellabona.com/hubfs/logo-bellabona.svg" alt="Bella&Bona" onerror="this.outerHTML='<span style=\\'color:white;font-size:20px;font-weight:900;letter-spacing:2px\\'>BELLA&amp;BONA</span>'">
+        <div class="tagline">Catering & Events</div>
+      </div>
+      <div class="offer-meta-block">
+        <div class="offer-label">Angebot / Offer</div>
+        <div class="offer-num">${esc(v('offerNumber'))||'—'}</div>
+        <div class="offer-dates">Datum: ${fmtDate(v('offerDate'))||'—'}<br>Gültig bis: ${fmtDate(v('validUntil'))||'—'}</div>
+        ${v('createdBy')?`<div class="offer-by">von ${esc(v('createdBy'))}</div>`:''}
+      </div>
+    </div>
+    ${(v('eventName')||metaSpans)?`<div class="lime-strip"><div class="event-title">${esc(v('eventName'))||'Event'}</div><div class="event-meta">${metaSpans}</div></div>`:''}
+    <div class="offer-body">
+      <div class="offer-section-title">Kunde / Customer</div>
+      <div class="offer-grid-2">
+        <div class="offer-field"><label>Company</label><span>${esc(v('company'))||'—'}</span></div>
+        <div class="offer-field"><label>Contact</label><span>${esc(v('contactName'))||'—'}${v('contactTitle')?` · ${esc(v('contactTitle'))}`:''}</span></div>
+        <div class="offer-field"><label>Email</label><span>${esc(v('contactEmail'))||'—'}</span></div>
+        <div class="offer-field"><label>Phone</label><span>${esc(v('contactPhone'))||'—'}</span></div>
+        ${v('billingAddress')?`<div class="offer-field" style="grid-column:1/-1"><label>Billing Address</label><span style="white-space:pre-wrap">${esc(v('billingAddress'))}</span></div>`:''}
+      </div>
+      ${v('setupInfo')?`<div style="margin-top:8px"><div class="offer-field"><label>Setup / Service</label><span>${esc(v('setupInfo'))}</span></div></div>`:''}
+      <div class="offer-section-title">Leistungen / Services</div>
+      ${items.length?`
+      <table class="offer-items">
+        <thead><tr>
+          <th>Item / Package</th><th>Type</th><th style="text-align:center">Portions</th><th>Diet</th><th>Unit Price</th><th>Breakdown</th><th>Total</th>
+        </tr></thead>
+        <tbody>${itemRows}</tbody>
+      </table>
+      <div class="offer-totals"><div class="totals-box">${totalsRows}</div></div>`
+      :`<p style="color:#aaa;font-size:12px;font-style:italic;padding:10px 0">No items added yet.</p>`}
+      ${(notes||payment||cancel)?`<div class="offer-section-title">Hinweise / Notes</div>`:''}
+      ${notes?`<div class="offer-notes">${esc(notes).replace(/\n/g,'<br>')}</div>`:''}
+      ${payment?`<div style="margin-top:12px"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#6B7A6B;margin-bottom:3px;font-weight:700">Payment Terms</div><div style="font-size:12.5px">${esc(payment)}</div></div>`:''}
+      ${cancel?`<div style="margin-top:9px"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#6B7A6B;margin-bottom:3px;font-weight:700">Cancellation Policy</div><div class="offer-terms">${esc(cancel).replace(/\n/g,'<br>')}</div></div>`:''}
+    </div>
+    <div class="offer-footer">
+      <div class="footer-contact"><strong>Get in Touch</strong>${esc(v('bbEmail'))} · ${esc(v('bbPhone'))}<br>${esc(v('bbWebsite'))}</div>
+      ${v('validUntil')?`<div class="validity">Offer valid until<br>${fmtDate(v('validUntil'))}</div>`:''}
+    </div>`;
+}
+
+function printOffer(){ window.print(); }
+function copyText(){
+  const p=calcPricing(),c=cur(),g=parseInt(v('guestCount'))||0;
+  const dt=v('discountType'),dv=parseFloat(v('discountValue'))||0;
+  let ed=fmtDate(v('eventDate')); if(v('eventDateEnd')&&v('eventDateEnd')!==v('eventDate')) ed+=` – ${fmtDate(v('eventDateEnd'))}`;
+  let txt=`ANGEBOT – BELLA&BONA\n${'='.repeat(50)}\nOffer: ${v('offerNumber')||'—'}  |  Date: ${fmtDate(v('offerDate'))||'—'}  |  Valid: ${fmtDate(v('validUntil'))||'—'}\n\n`;
+  txt+=`CUSTOMER\n${'─'.repeat(40)}\n${v('company')||''}${v('contactName')?'\nAttn.: '+v('contactName'):''}\n`;
+  if(v('contactEmail')) txt+=v('contactEmail')+'\n'; if(v('contactPhone')) txt+=v('contactPhone')+'\n';
+  txt+=`\nEVENT\n${'─'.repeat(40)}\n${v('eventName')||'—'}\nDate: ${ed||'—'}${v('eventTime')?' · '+v('eventTime'):''}\nGuests: ${g||'—'}\n`;
+  if(v('venue')) txt+=`Venue: ${v('venue')}\n`;
+  txt+=`\nSERVICES\n${'─'.repeat(40)}\n`;
+  items.forEach(i=>{ const lt=lineTotal(i),pp=i.type==='per_person'?` (${i.qty} × ${c}${fmt(i.unitPrice)} × ${g} PAX)`:`(${i.qty} × ${c}${fmt(i.unitPrice)})`; txt+=`• ${i.name||'—'} ${pp}: ${c} ${fmt(lt)}  [${DIET_LABELS[i.dietType]||''}]\n`; if(i.desc) txt+=`  ${i.desc}\n`; });
+  txt+=`\nPRICING\n${'─'.repeat(40)}\nSubtotal: ${c} ${fmt(p.subtotal)}\n`;
+  if(p.discount>0) txt+=`Discount${dt==='percent'?` ${dv}%`:''}: − ${c} ${fmt(p.discount)}\n`;
+  txt+=`MwSt ${p.vatRate}%: ${c} ${fmt(p.vat)}\nTOTAL: ${c} ${fmt(p.gross)}\n\n`;
+  if(v('notes')) txt+=`NOTES\n${'─'.repeat(40)}\n${v('notes')}\n\n`;
+  if(v('paymentTerms')) txt+=`Payment Terms: ${v('paymentTerms')}\n`;
+  if(v('cancellationPolicy')) txt+=`Cancellation: ${v('cancellationPolicy')}\n\n`;
+  txt+=`${'─'.repeat(40)}\n${v('bbEmail')} · ${v('bbPhone')} · ${v('bbWebsite')}`;
+  navigator.clipboard.writeText(txt).then(()=>{ const s=document.getElementById('copySuccess'); s.style.display='block'; setTimeout(()=>s.style.display='none',2500); });
+}
+const FIELDS=['offerNumber','offerDate','validUntil','createdBy','company','contactName','contactTitle','contactEmail','contactPhone','billingAddress','eventName','eventDate','eventDateEnd','eventTime','guestCount','venue','setupInfo','discountType','discountValue','vatRate','currency','notes','paymentTerms','cancellationPolicy','bbEmail','bbPhone','bbWebsite'];
+function saveToLocal(){ localStorage.setItem('bb_offer_draft',JSON.stringify({fields:FIELDS.reduce((o,id)=>{o[id]=v(id);return o;},{}),items})); alert('Draft saved!'); }
+function loadFromLocal(){ const raw=localStorage.getItem('bb_offer_draft'); if(!raw){alert('No saved draft found.');return;} const data=JSON.parse(raw); Object.entries(data.fields).forEach(([id,val])=>{ const el=document.getElementById(id); if(el) el.value=val; }); items=data.items||[]; itemCounter=items.length?Math.max(...items.map(i=>i.id))+1:0; renderItems(); render(); }
+function resetForm(){ if(!confirm('Start a new offer?'))return; FIELDS.filter(f=>!['discountType','vatRate','currency','bbEmail','bbPhone','bbWebsite'].includes(f)).forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); document.getElementById('discountType').value='none'; document.getElementById('vatRate').value='19'; document.getElementById('currency').value='€'; items=[]; itemCounter=0; renderItems(); autoOfferNumber(); }
+function autoOfferNumber(){ const d=new Date(); document.getElementById('offerNumber').value=`BB-${d.getFullYear()}-${String(Math.floor(Math.random()*900)+100)}`; document.getElementById('offerDate').value=d.toISOString().slice(0,10); const v2=new Date(d); v2.setDate(v2.getDate()+14); document.getElementById('validUntil').value=v2.toISOString().slice(0,10); render(); }
+
+// ══════════════ AI CHATBOT ══════════════
+function toggleChat(){
+  const panel=document.getElementById('chatPanel');
+  panel.classList.toggle('open');
+  if(panel.classList.contains('open')){
+    document.getElementById('chatNotif').style.display='none';
+    const k=localStorage.getItem('bb_api_key');
+    if(!k) document.getElementById('chatSetup').classList.add('visible');
+  }
+}
+function toggleSetup(){ document.getElementById('chatSetup').classList.toggle('visible'); }
+function saveApiKey(){
+  const k=document.getElementById('apiKeyInput').value.trim();
+  if(!k){ alert('Please enter your API key.'); return; }
+  localStorage.setItem('bb_api_key',k);
+  document.getElementById('keyStatus').classList.add('show');
+  document.getElementById('chatSetup').classList.remove('visible');
+  setTimeout(()=>document.getElementById('keyStatus').classList.remove('show'),3000);
+}
+function clearChat(){
+  const msgs=document.getElementById('chatMessages');
+  msgs.innerHTML=`<div class="msg ai"><div class="msg-bubble">Chat cleared. Paste a new customer email or event description to get menu suggestions.</div></div>`;
+}
+function addTyping(){
+  const msgs=document.getElementById('chatMessages');
+  const el=document.createElement('div'); el.className='msg ai'; el.id='typingMsg';
+  el.innerHTML=`<div class="msg-bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function addMessage(role,html){
+  const msgs=document.getElementById('chatMessages');
+  const el=document.createElement('div'); el.className=`msg ${role}`;
+  const time=new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  el.innerHTML=`<div class="msg-bubble">${html}</div><div class="msg-time">${time}</div>`;
+  msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight;
+}
+
+async function sendMessage(){
+  const apiKey=localStorage.getItem('bb_api_key');
+  if(!apiKey){ toggleSetup(); addMessage('ai','⚠️ Please set your Anthropic API key first using the ⚙ button above.'); return; }
+  const input=document.getElementById('chatInput');
+  const text=input.value.trim();
+  if(!text) return;
+  addMessage('user',esc(text).replace(/\n/g,'<br>'));
+  input.value='';
+  const btn=document.getElementById('sendBtn'); btn.disabled=true;
+  const typing=addTyping();
+  const guestCount=v('guestCount')||'unknown';
+  const eventType=v('eventName')||'unspecified event';
+  const systemPrompt=`You are a catering menu assistant for Bella&Bona, a premium catering company operating in Berlin and Munich, Germany. You specialize in corporate catering, BBQs, lunches, dinners, and cocktail events.
+
+Based on customer requirements, suggest appropriate menu items and packages. Be specific, practical, and price-realistic for the German market.
+
+ALWAYS respond with valid JSON in this exact format (no markdown, no code block, just raw JSON):
+{
+  "summary": "2-3 sentence analysis of the event requirements",
+  "items": [
+    {
+      "name": "Item name",
+      "desc": "Brief appetizing description",
+      "type": "per_person",
+      "qty": 1,
+      "unitPrice": 35,
+      "portions": 80,
+      "dietType": "omni",
+      "note": ""
+    }
+  ],
+  "notes": "Additional recommendations or things to flag"
+}
+
+dietType options: omni, vegetarian, vegan, halal, kosher, gf, fish, mixed
+type options: per_person, fixed
+
+Bella&Bona pricing guidance:
+- BBQ buffet: €25–65/person | Lunch buffet: €15–35/person | Drinks package: €12–28/person
+- Cocktail reception: €20–45/person | Breakfast: €10–20/person
+- Service staff: €250–450 fixed | Setup/delivery: €200–600 fixed | Equipment rental: €150–400 fixed
+Current event context: ${guestCount} guests, ${eventType}`;
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2048,system:systemPrompt,messages:[{role:'user',content:text}]})
+    });
+    typing.remove();
+    if(!resp.ok){ const err=await resp.json(); addMessage('ai',`⚠️ API Error: ${err.error?.message||resp.statusText}`); btn.disabled=false; return; }
+    const data=await resp.json();
+    const raw=data.content[0].text.trim();
+    let parsed;
+    try{ parsed=JSON.parse(raw); }
+    catch(e){
+      const match=raw.match(/\{[\s\S]*\}/);
+      if(match) parsed=JSON.parse(match[0]); else{ addMessage('ai',raw.replace(/\n/g,'<br>')); btn.disabled=false; return; }
+    }
+    // Render summary
+    let html=`<strong>📋 Analysis</strong><br>${esc(parsed.summary||'').replace(/\n/g,'<br>')}<br><br><strong>💡 Suggested Items:</strong>`;
+    addMessage('ai',html);
+    // Render each item as a suggestion card
+    (parsed.items||[]).forEach((item,idx)=>{
+      const msgs=document.getElementById('chatMessages');
+      const card=document.createElement('div'); card.className='suggestion-card';
+      const typeLabel=item.type==='per_person'?`<span class="s-badge type-pp">/Person</span>`:`<span class="s-badge type-fixed">Fixed</span>`;
+      const dietLabel=item.dietType?`<span class="s-badge ${DIET_CLASS[item.dietType]||'diet-omni'}">${DIET_LABELS[item.dietType]||item.dietType}</span>`:'';
+      const portionText=item.portions?`${item.portions} portions`:'';
+      card.innerHTML=`
+        <div class="s-name">${esc(item.name||'')}</div>
+        <div class="s-desc">${esc(item.desc||'')}</div>
+        <div class="s-meta">${typeLabel}${dietLabel}<span class="s-price">€ ${fmt(item.unitPrice||0)} ${item.type==='per_person'?'/person':''}</span>${portionText?`<span style="font-size:10px;color:#888">${portionText}</span>`:''}</div>
+        ${item.note?`<div style="font-size:10.5px;color:#888;margin-bottom:6px;font-style:italic">💬 ${esc(item.note)}</div>`:''}
+        <button class="add-to-offer-btn" id="add-btn-${idx}" onclick="addSuggestionToOffer(${JSON.stringify(item).replace(/"/g,'&quot;')},${idx})">+ Add to Offer</button>`;
+      msgs.appendChild(card); msgs.scrollTop=msgs.scrollHeight;
+    });
+    if(parsed.notes){
+      addMessage('ai',`<strong>📝 Notes:</strong><br>${esc(parsed.notes).replace(/\n/g,'<br>')}`);
+    }
+    // Show notification
+    if(!document.getElementById('chatPanel').classList.contains('open')){
+      const n=document.getElementById('chatNotif'); n.style.display='flex';
+    }
+  }catch(err){
+    typing.remove(); addMessage('ai',`⚠️ Error: ${err.message}`);
+  }
+  btn.disabled=false;
+}
+
+function addSuggestionToOffer(item,idx){
+  addItem(item.name||'',item.desc||'',item.type||'per_person',item.qty||1,item.unitPrice||0,item.portions||0,item.dietType||'omni');
+  const btn=document.getElementById(`add-btn-${idx}`);
+  if(btn){ btn.classList.add('added'); btn.textContent='✓ Added to Offer'; btn.onclick=null; }
+}
+
+// Allow Ctrl/Cmd+Enter to send
+document.addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'&&document.activeElement.id==='chatInput') sendMessage();
+});
+
+// ── INIT ──
+autoOfferNumber();
+addItem('','','per_person',1,0,0,'omni');
+</script>
+</body>
+</html>
