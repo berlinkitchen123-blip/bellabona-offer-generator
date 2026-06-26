@@ -3,741 +3,2024 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bella&Bona – Offer Generator</title>
+<title>Bellabona – Offer Generator</title>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <style>
-:root {
-  --green:#024930; --green-mid:#1A6645; --lime:#E0EA68; --lime-light:#F9FEEC;
-  --lime-mid:#E6FFA9; --cream:#F8F7F6; --white:#FFFFFF; --border:#DDE8D8;
-  --gray:#6B7A6B; --dark:#111F16; --red:#C0392B; --font:-apple-system,'Segoe UI',Arial,sans-serif;
+:root{
+  --green:#024930;--lime:#E0EA68;--cream:#F8F7F6;--border:#DDE8D8;--gray:#6B7A6B;
+  --preview-bg:#D8E8D4;--red:#c0392b;--blue:#2563eb;
+  --radius:8px;--shadow:0 2px 12px rgba(0,0,0,.10);
 }
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font);background:var(--cream);color:var(--dark);min-height:100vh}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{display:flex;height:100vh;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif;background:var(--cream);color:#1a2e1a;}
+input,select,textarea,button{font-family:inherit;}
 
-/* ── LAYOUT ── */
-.app{display:flex;min-height:100vh}
-.sidebar{width:500px;min-width:500px;background:var(--white);border-right:2px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
-.preview-pane{flex:1;background:#D8E8D4;padding:28px;overflow-y:auto}
+/* SIDEBAR */
+#sidebar{width:500px;min-width:500px;display:flex;flex-direction:column;background:#fff;border-right:1px solid var(--border);overflow:hidden;}
+#sidebar-header{background:var(--green);padding:12px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+#sidebar-header img{height:32px;filter:brightness(0) invert(1);}
+nav#nav-pills{display:flex;gap:6px;flex:1;}
+nav#nav-pills button{background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;transition:background .2s;}
+nav#nav-pills button.active,nav#nav-pills button:hover{background:var(--lime);color:var(--green);font-weight:600;}
+.cloud-dot{width:10px;height:10px;border-radius:50%;background:var(--lime);flex-shrink:0;box-shadow:0 0 6px var(--lime);}
+#sidebar-body{flex:1;overflow-y:auto;padding:10px;}
+.section{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;background:var(--cream);user-select:none;font-weight:600;font-size:13px;color:var(--green);}
+.section-header:hover{background:#eef5ee;}
+.chevron{transition:transform .2s;}
+.section-header.open .chevron{transform:rotate(180deg);}
+.section-body{display:none;padding:12px;border-top:1px solid var(--border);}
+.section-body.open{display:block;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.form-row.three{grid-template-columns:1fr 1fr 1fr;}
+.form-group{display:flex;flex-direction:column;gap:3px;margin-bottom:8px;}
+.form-group.full{grid-column:1/-1;}
+label{font-size:11px;color:var(--gray);font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+input[type=text],input[type=number],input[type=date],input[type=time],input[type=email],input[type=tel],select,textarea{
+  border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;color:#1a2e1a;background:#fff;width:100%;outline:none;transition:border-color .2s;}
+input:focus,select:focus,textarea:focus{border-color:var(--green);}
+textarea{resize:vertical;min-height:60px;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-green{background:var(--green);color:#fff;}
+.btn-green:hover{background:#035f3d;}
+.btn-lime{background:var(--lime);color:var(--green);}
+.btn-lime:hover{background:#cdd85e;}
+.btn-outline{background:#fff;color:var(--green);border:1px solid var(--border);}
+.btn-outline:hover{background:var(--cream);}
+.btn-red{background:#fef2f2;color:var(--red);border:1px solid #fca5a5;}
+.btn-red:hover{background:#fee2e2;}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.btn-xs{padding:3px 8px;font-size:11px;}
+#sidebar-actions{padding:10px;border-top:1px solid var(--border);flex-shrink:0;background:#fff;}
+#sidebar-actions .btn-green{width:100%;margin-bottom:8px;padding:11px;}
+.action-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;}
+.action-row.three{grid-template-columns:1fr 1fr 1fr;}
 
-/* ── SIDEBAR HEADER ── */
-.sidebar-header{background:var(--green);padding:18px 22px 14px;display:flex;align-items:center;justify-content:space-between}
-.sidebar-header img.bb-logo{height:28px;filter:brightness(0) invert(1)}
-.sidebar-header .badge-tag{background:var(--lime);color:var(--green);font-size:10px;font-weight:800;letter-spacing:1.5px;padding:4px 10px;border-radius:20px;text-transform:uppercase}
+/* ITEM CARDS */
+.item-card{border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:8px;background:var(--cream);}
+.item-card-top{display:flex;gap:8px;align-items:center;margin-bottom:8px;position:relative;}
+.item-card-top input{flex:1;font-weight:700;font-size:14px;}
+.item-card-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:8px;}
+.item-card-grid label{font-size:10px;}
+.total-badge{background:var(--green);color:#fff;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap;text-align:center;}
+.item-card-bottom{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;}
+.item-card-bottom input{font-size:12px;}
+#items-container{margin-bottom:8px;}
+/* Autocomplete */
+.ac-wrap{position:relative;flex:1;display:flex;align-items:center;gap:4px;}
+.ac-wrap input{flex:1;font-weight:700;font-size:14px;}
+.ac-dropdown{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--green);border-radius:8px;box-shadow:0 8px 24px rgba(2,73,48,.18);z-index:500;max-height:220px;overflow-y:auto;margin-top:2px;}
+.ac-item{padding:8px 12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--border);font-size:13px;}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover{background:var(--lime-light,#F9FEEC);}
+.ac-item .ac-name{font-weight:700;color:var(--dark,#111);flex:1;}
+.ac-item .ac-price{font-size:11px;color:var(--green);font-weight:700;white-space:nowrap;}
+.ac-item .ac-diet{font-size:10px;color:var(--gray,#6B7A6B);white-space:nowrap;}
+/* Sync indicator */
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#ccc;flex-shrink:0;transition:background .3s;cursor:help;}
+.sync-dot.syncing{background:orange;animation:pulse .8s infinite;}
+.sync-dot.synced{background:#4ade80;}
+.sync-dot.unlinked{background:#ddd;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.add-btns{display:flex;gap:8px;}
 
-/* ── SECTIONS ── */
-.section{border-bottom:1px solid var(--border)}
-.section-title{background:var(--cream);padding:10px 18px;font-size:10px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;color:var(--green);cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;transition:background .15s}
-.section-title:hover{background:var(--lime-light)}
-.section-body{padding:13px 18px;display:flex;flex-direction:column;gap:9px}
-.section-body.collapsed{display:none}
+/* PREVIEW */
+#preview{flex:1;background:var(--preview-bg);overflow-y:auto;padding:24px;display:flex;justify-content:center;}
+#offer-doc{background:#fff;width:100%;max-width:820px;border-radius:12px;box-shadow:var(--shadow);overflow:hidden;height:fit-content;}
+.doc-header{background:var(--green);padding:20px 28px;display:flex;align-items:center;justify-content:space-between;}
+.doc-header img{height:36px;filter:brightness(0) invert(1);}
+.doc-header-right{text-align:right;color:#fff;}
+.doc-header-right .offer-num{color:var(--lime);font-size:18px;font-weight:700;}
+.doc-header-right .offer-dates{color:rgba(255,255,255,.8);font-size:12px;margin-top:2px;}
+.doc-lime-strip{background:var(--lime);padding:14px 28px;}
+.doc-lime-strip h2{color:var(--green);font-size:16px;font-weight:700;}
+.doc-lime-strip p{color:var(--green);font-size:13px;opacity:.8;}
+.doc-body{padding:24px 28px;}
+.doc-section-title{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:12px;}
+.customer-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+.customer-block p{font-size:13px;line-height:1.6;}
+.customer-block strong{display:block;font-size:14px;color:var(--green);margin-bottom:4px;}
+table.services-table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px;}
+.services-table th{background:var(--green);color:#fff;padding:8px 10px;text-align:left;font-size:12px;}
+.services-table td{padding:8px 10px;border-bottom:1px solid var(--border);}
+.services-table tr:last-child td{border-bottom:none;}
+.services-table tr:nth-child(even){background:#f9fdf9;}
+.diet-badge,.cat-badge,.status-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
+.diet-badge{background:#e8f5e9;color:#2e7d32;}
+.cat-badge{background:#e3f2fd;color:#1565c0;}
+.totals-box{display:flex;justify-content:flex-end;margin-bottom:20px;}
+.totals-inner{width:280px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.totals-row{display:flex;justify-content:space-between;padding:8px 14px;font-size:13px;border-bottom:1px solid var(--border);}
+.totals-row:last-child{border-bottom:none;}
+.totals-row.total{background:var(--green);color:#fff;font-weight:700;font-size:15px;}
+.notes-card{background:#f9fdf9;border-left:4px solid var(--lime);border-radius:0 var(--radius) var(--radius) 0;padding:14px 16px;margin-bottom:20px;font-size:13px;line-height:1.7;}
+.doc-footer{background:var(--green);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;}
+.doc-footer p{color:rgba(255,255,255,.8);font-size:12px;}
+.doc-footer .validity{color:var(--lime);font-size:12px;font-weight:600;}
 
-/* ── FORM ── */
-.row{display:flex;gap:8px}
-.row .field{flex:1}
-.field{display:flex;flex-direction:column;gap:3px}
-.field label{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.8px}
-.field input,.field select,.field textarea{border:1.5px solid var(--border);border-radius:6px;padding:7px 9px;font-size:13px;font-family:var(--font);background:var(--white);transition:border-color .2s,box-shadow .2s;color:var(--dark)}
-.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(2,73,48,.08)}
-.field textarea{resize:vertical;min-height:60px}
+/* MODALS */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:flex-start;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:#fff;border-radius:12px;width:100%;max-width:860px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.modal-header{background:var(--green);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.modal-header h2{color:#fff;font-size:16px;}
+.modal-close{background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;}
+.modal-close:hover{background:rgba(255,255,255,.35);}
+.modal-toolbar{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex-shrink:0;background:var(--cream);}
+.modal-body{flex:1;overflow-y:auto;padding:16px;}
+.modal-form{border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;background:var(--cream);}
+.modal-form h3{font-size:14px;color:var(--green);margin-bottom:12px;font-weight:700;}
+.search-input{border:1px solid var(--border);border-radius:6px;padding:7px 12px;font-size:13px;width:220px;outline:none;}
+.search-input:focus{border-color:var(--green);}
+.filter-select{border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;outline:none;}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;}
+.data-card{border:1px solid var(--border);border-radius:var(--radius);padding:12px;background:#fff;}
+.data-card h4{font-size:14px;font-weight:700;color:var(--green);margin-bottom:4px;}
+.data-card p{font-size:12px;color:var(--gray);margin-bottom:6px;line-height:1.5;}
+.data-card-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
 
-/* ── ITEM CARDS ── */
-.item-card{background:var(--cream);border:1.5px solid var(--border);border-radius:8px;padding:10px 11px;margin-bottom:7px;position:relative}
-.item-card:hover{border-color:#b5cdb5}
-.item-row1{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;margin-bottom:7px}
-.item-name-input{border:1.5px solid var(--border);border-radius:5px;padding:6px 8px;font-size:13px;font-family:var(--font);background:var(--white);width:100%;font-weight:600}
-.item-name-input:focus{outline:none;border-color:var(--green)}
-.item-row2{display:grid;grid-template-columns:1fr 68px 72px 80px 80px;gap:6px;align-items:center}
-.item-row3{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-top:6px}
-.item-desc-input{border:1.5px solid var(--border);border-radius:5px;padding:5px 8px;font-size:11.5px;font-family:var(--font);background:var(--white);width:100%;color:#666}
-.item-desc-input:focus{outline:none;border-color:var(--green)}
-.item-row2 input,.item-row2 select{border:1.5px solid var(--border);border-radius:5px;padding:5px 6px;font-size:12px;font-family:var(--font);background:var(--white);width:100%}
-.item-row2 input:focus,.item-row2 select:focus{outline:none;border-color:var(--green)}
-.item-total-badge{font-size:12px;font-weight:800;color:var(--green);white-space:nowrap;padding:5px 8px;background:var(--lime-light);border-radius:5px;text-align:right}
-.item-del{position:absolute;top:8px;right:8px;background:none;border:1px solid #ddd;border-radius:4px;width:22px;height:22px;cursor:pointer;color:#bbb;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s}
-.item-del:hover{background:#ffeaea;border-color:var(--red);color:var(--red)}
-.item-label{font-size:9.5px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px}
-.diet-badge{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:12px;margin-left:4px}
+/* STATS BAR */
+.stats-bar{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--cream);flex-shrink:0;flex-wrap:wrap;}
+.stat-chip{display:flex;flex-direction:column;align-items:center;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:8px 14px;min-width:90px;}
+.stat-chip .val{font-size:18px;font-weight:700;color:var(--green);}
+.stat-chip .lbl{font-size:11px;color:var(--gray);}
 
-.btn-add{background:var(--lime-light);color:var(--green);border:1.5px dashed var(--green);border-radius:6px;padding:8px;font-size:12.5px;font-weight:700;cursor:pointer;width:100%;margin-top:2px;transition:all .2s}
-.btn-add:hover{background:var(--lime);border-style:solid}
+/* OFFERS TABLE */
+.offers-table{width:100%;border-collapse:collapse;font-size:13px;}
+.offers-table th{background:var(--cream);padding:10px 12px;text-align:left;border-bottom:2px solid var(--border);font-size:12px;color:var(--gray);}
+.offers-table td{padding:10px 12px;border-bottom:1px solid var(--border);}
+.offers-table tr:hover td{background:#f9fdf9;}
+.status-draft{background:#fef9c3;color:#854d0e;}
+.status-sent{background:#dbeafe;color:#1e40af;}
+.status-accepted{background:#dcfce7;color:#166534;}
+.status-rejected{background:#fee2e2;color:#991b1b;}
 
-/* ── PRICING ── */
-.pricing-grid{display:flex;flex-direction:column;gap:5px}
-.pricing-row{display:flex;justify-content:space-between;align-items:center;font-size:13px}
-.pricing-row.total{font-size:16px;font-weight:800;color:var(--green);border-top:2px solid var(--green);padding-top:7px;margin-top:4px}
-.pricing-row.vat{color:var(--gray);font-size:12px}
-.pricing-row.discount{color:var(--red)}
-.pricing-value{font-weight:600}
+/* AI CHAT */
+#chat-bubble{position:fixed;bottom:24px;right:24px;width:52px;height:52px;background:var(--green);border-radius:50%;border:3px solid var(--lime);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:500;box-shadow:0 4px 20px rgba(0,0,0,.2);font-size:22px;}
+#chat-panel{display:none;position:fixed;bottom:88px;right:24px;width:390px;height:550px;background:#fff;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.25);z-index:500;flex-direction:column;overflow:hidden;border:1px solid var(--border);}
+#chat-panel.open{display:flex;}
+#chat-panel-header{background:var(--green);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+#chat-panel-header h3{color:#fff;font-size:14px;}
+.chat-header-btns{display:flex;gap:6px;}
+#chat-messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;}
+.chat-msg{max-width:80%;padding:8px 12px;border-radius:10px;font-size:13px;line-height:1.5;}
+.chat-msg.user{background:var(--green);color:#fff;align-self:flex-end;border-bottom-right-radius:2px;}
+.chat-msg.ai{background:var(--cream);color:#1a2e1a;align-self:flex-start;border-bottom-left-radius:2px;border:1px solid var(--border);}
+.chat-msg.system{background:#fef9c3;color:#854d0e;align-self:center;font-size:12px;border-radius:20px;padding:4px 12px;}
+.suggestion-card{border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-top:6px;background:#fff;}
+.suggestion-card h5{font-size:13px;font-weight:700;color:var(--green);margin-bottom:4px;}
+.suggestion-card p{font-size:12px;color:var(--gray);margin-bottom:6px;}
+#chat-input-row{padding:10px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;}
+#chat-input{flex:1;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:13px;resize:none;height:60px;outline:none;}
+#chat-input:focus{border-color:var(--green);}
+.chat-send-btn{background:var(--green);color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:18px;}
+.chat-send-btn:hover{background:#035f3d;}
+#api-key-modal{display:none;position:absolute;inset:0;background:rgba(0,0,0,.6);z-index:10;align-items:center;justify-content:center;}
+#api-key-modal.open{display:flex;}
+.api-key-box{background:#fff;border-radius:10px;padding:20px;width:300px;}
+.api-key-box h4{margin-bottom:10px;color:var(--green);}
 
-/* ── ACTIONS ── */
-.actions{padding:14px 18px;display:flex;flex-direction:column;gap:7px}
-.btn-primary{background:var(--green);color:var(--white);border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:800;cursor:pointer;transition:background .2s}
-.btn-primary:hover{background:var(--green-mid)}
-.btn-lime{background:var(--lime);color:var(--green);border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:800;cursor:pointer;transition:background .2s}
-.btn-lime:hover{background:#cdd85e}
-.btn-outline{background:var(--white);color:var(--dark);border:1.5px solid var(--border);border-radius:8px;padding:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
-.btn-outline:hover{border-color:var(--green);color:var(--green);background:var(--lime-light)}
-.copy-success{display:none;color:var(--green);font-size:12px;font-weight:700;text-align:center;background:var(--lime-light);padding:7px;border-radius:6px}
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
 
-/* ══════════ OFFER PREVIEW ══════════ */
-.offer-preview{background:var(--white);border-radius:4px;box-shadow:0 6px 32px rgba(2,73,48,.18);max-width:820px;margin:0 auto}
-.offer-top{background:var(--green);padding:32px 44px 26px;display:flex;justify-content:space-between;align-items:flex-start}
-.offer-top .logo-block img{height:32px;filter:brightness(0) invert(1)}
-.offer-top .logo-block .tagline{color:var(--lime);font-size:9.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-top:5px}
-.offer-meta-block{text-align:right}
-.offer-meta-block .offer-label{font-size:8.5px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--lime);margin-bottom:3px}
-.offer-meta-block .offer-num{font-size:24px;font-weight:900;color:var(--white);letter-spacing:1px;line-height:1}
-.offer-meta-block .offer-dates{font-size:11.5px;color:rgba(255,255,255,.65);margin-top:7px;line-height:1.9}
-.offer-meta-block .offer-by{font-size:10.5px;color:var(--lime);margin-top:3px}
-.lime-strip{background:var(--lime);padding:9px 44px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.lime-strip .event-title{font-size:14px;font-weight:800;color:var(--green)}
-.lime-strip .event-meta{font-size:11px;color:var(--green-mid);margin-left:auto;display:flex;gap:12px;flex-wrap:wrap}
-.lime-strip .event-meta span::before{content:'📅 '}
-.lime-strip .event-meta span.loc::before{content:'📍 '}
-.lime-strip .event-meta span.pax::before{content:'👥 '}
-.offer-body{padding:28px 44px}
-.offer-section-title{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--green);border-bottom:1.5px solid var(--lime);padding-bottom:4px;margin-bottom:12px;margin-top:24px}
-.offer-section-title:first-child{margin-top:0}
-.offer-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.offer-field label{font-size:8.5px;text-transform:uppercase;letter-spacing:1px;color:var(--gray);display:block;margin-bottom:2px}
-.offer-field span{font-size:13px;color:var(--dark);font-weight:500}
-.offer-items{width:100%;border-collapse:collapse;font-size:12px}
-.offer-items thead tr{background:var(--green)}
-.offer-items thead th{padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:1px;font-weight:700;color:var(--lime)}
-.offer-items thead th:last-child{text-align:right}
-.offer-items tbody tr{border-bottom:1px solid var(--border)}
-.offer-items tbody tr:last-child{border-bottom:none}
-.offer-items td{padding:9px 10px;vertical-align:top}
-.offer-items td:last-child{text-align:right;font-weight:700;color:var(--green)}
-.offer-items td .item-name{font-weight:700;color:var(--dark)}
-.offer-items td .item-desc{font-size:10.5px;color:var(--gray);margin-top:2px}
-.offer-items tbody tr:nth-child(even){background:var(--lime-light)}
-.offer-totals{margin-top:18px;display:flex;justify-content:flex-end}
-.totals-box{width:280px;border:1.5px solid var(--border);border-radius:8px;overflow:hidden}
-.totals-row{display:flex;justify-content:space-between;padding:7px 13px;font-size:12.5px;border-bottom:1px solid var(--border);background:var(--white)}
-.totals-row:last-child{border-bottom:none;background:var(--green);color:var(--white);font-size:14px;font-weight:900;padding:10px 13px}
-.totals-row:last-child span:last-child{color:var(--lime)}
-.totals-row.discount{color:var(--red)}
-.totals-row.vat{color:var(--gray);font-size:11.5px}
-.offer-notes{background:var(--lime-light);border-left:3px solid var(--lime);padding:12px 14px;font-size:12px;line-height:1.75;color:var(--dark);margin-top:5px;border-radius:0 5px 5px 0;white-space:pre-wrap}
-.offer-terms{font-size:11px;color:var(--gray);line-height:1.75;margin-top:5px}
-.offer-footer{background:var(--green);padding:16px 44px;display:flex;justify-content:space-between;align-items:center}
-.offer-footer .footer-contact{font-size:11px;color:rgba(255,255,255,.65);line-height:1.9}
-.offer-footer .footer-contact strong{color:var(--lime);display:block;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;margin-bottom:1px}
-.offer-footer .validity{text-align:right;font-size:10px;color:var(--lime);font-weight:700;letter-spacing:.5px}
-
-/* ══════════ AI CHAT WIDGET ══════════ */
-#chatBubble{position:fixed;bottom:24px;right:24px;width:52px;height:52px;background:var(--green);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(2,73,48,.4);z-index:1000;transition:transform .2s,box-shadow .2s;border:3px solid var(--lime)}
-#chatBubble:hover{transform:scale(1.08);box-shadow:0 6px 28px rgba(2,73,48,.5)}
-#chatBubble svg{width:24px;height:24px;fill:var(--lime)}
-#chatBubble .notif{position:absolute;top:-3px;right:-3px;width:14px;height:14px;background:var(--lime);border-radius:50%;display:none;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:var(--green)}
-
-#chatPanel{position:fixed;bottom:88px;right:24px;width:400px;height:560px;background:var(--white);border-radius:16px;box-shadow:0 12px 48px rgba(0,0,0,.18);z-index:999;display:none;flex-direction:column;overflow:hidden;border:1.5px solid var(--border)}
-#chatPanel.open{display:flex}
-
-.chat-header{background:var(--green);padding:14px 16px;display:flex;align-items:center;gap:10px}
-.chat-header .chat-avatar{width:36px;height:36px;background:var(--lime);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-.chat-header .chat-info .chat-name{font-size:13px;font-weight:800;color:var(--white)}
-.chat-header .chat-info .chat-sub{font-size:10.5px;color:rgba(255,255,255,.65)}
-.chat-header .chat-settings{margin-left:auto;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.65);font-size:18px;padding:0;display:flex;align-items:center}
-.chat-header .chat-settings:hover{color:var(--lime)}
-.chat-header .chat-close{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.65);font-size:20px;padding:0 0 0 8px;display:flex;align-items:center}
-.chat-header .chat-close:hover{color:var(--white)}
-
-/* API Key Setup */
-#chatSetup{padding:20px;display:none;flex-direction:column;gap:12px;border-bottom:1px solid var(--border)}
-#chatSetup.visible{display:flex}
-#chatSetup .setup-label{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.8px}
-#chatSetup input{border:1.5px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12.5px;font-family:var(--font);background:var(--cream);width:100%}
-#chatSetup input:focus{outline:none;border-color:var(--green)}
-#chatSetup .save-key-btn{background:var(--green);color:var(--white);border:none;border-radius:6px;padding:8px;font-size:12.5px;font-weight:700;cursor:pointer}
-#chatSetup .save-key-btn:hover{background:var(--green-mid)}
-.key-status{font-size:11px;color:var(--green);font-weight:600;display:none}
-.key-status.show{display:block}
-
-/* Messages */
-#chatMessages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
-.msg{display:flex;flex-direction:column;gap:4px;max-width:92%}
-.msg.user{align-self:flex-end}
-.msg.ai{align-self:flex-start}
-.msg-bubble{padding:9px 12px;border-radius:12px;font-size:12.5px;line-height:1.6}
-.msg.user .msg-bubble{background:var(--green);color:var(--white);border-bottom-right-radius:4px}
-.msg.ai .msg-bubble{background:var(--cream);color:var(--dark);border-bottom-left-radius:4px;border:1px solid var(--border)}
-.msg-time{font-size:9.5px;color:#aaa;padding:0 4px}
-.msg.user .msg-time{text-align:right}
-
-/* AI suggestion cards */
-.suggestion-card{background:var(--white);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;margin-top:4px}
-.suggestion-card .s-name{font-size:13px;font-weight:800;color:var(--dark);margin-bottom:2px}
-.suggestion-card .s-desc{font-size:11px;color:var(--gray);margin-bottom:6px;line-height:1.5}
-.suggestion-card .s-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
-.s-badge{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px}
-.s-badge.type-pp{background:#E6FFA9;color:#024930}
-.s-badge.type-fixed{background:#EFF8E8;color:#1A6645}
-.s-badge.diet-vegan{background:#D4EDDA;color:#155724}
-.s-badge.diet-vegetarian{background:#FFF3CD;color:#856404}
-.s-badge.diet-halal{background:#D1ECF1;color:#0c5460}
-.s-badge.diet-kosher{background:#E8D5F5;color:#5A1282}
-.s-badge.diet-gf{background:#FCE8D5;color:#7A3300}
-.s-badge.diet-omni{background:#F0F0F0;color:#444}
-.s-badge.diet-fish{background:#CCE5FF;color:#004085}
-.s-price{font-size:12px;font-weight:700;color:var(--green)}
-.add-to-offer-btn{background:var(--lime);color:var(--green);border:none;border-radius:6px;padding:5px 10px;font-size:11.5px;font-weight:800;cursor:pointer;transition:background .2s;width:100%}
-.add-to-offer-btn:hover{background:#cdd85e}
-.add-to-offer-btn.added{background:#E6FFA9;color:var(--green-mid);cursor:default}
-
-/* Chat input area */
-.chat-input-area{padding:12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
-#chatInput{border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;font-size:12.5px;font-family:var(--font);resize:none;min-height:70px;max-height:120px;background:var(--white);transition:border-color .2s}
-#chatInput:focus{outline:none;border-color:var(--green)}
-.chat-input-footer{display:flex;gap:6px;align-items:center}
-.chat-send-btn{background:var(--green);color:var(--white);border:none;border-radius:7px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .2s}
-.chat-send-btn:hover{background:var(--green-mid)}
-.chat-send-btn:disabled{background:#bbb;cursor:not-allowed}
-.chat-clear-btn{background:none;border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:11.5px;cursor:pointer;color:var(--gray)}
-.chat-clear-btn:hover{border-color:var(--green);color:var(--green)}
-.chat-hint{font-size:10.5px;color:var(--gray);line-height:1.5}
-.typing-indicator{display:flex;gap:4px;align-items:center;padding:10px 12px}
-.typing-indicator span{width:7px;height:7px;background:var(--green);border-radius:50%;animation:bounce .9s infinite}
-.typing-indicator span:nth-child(2){animation-delay:.2s}
-.typing-indicator span:nth-child(3){animation-delay:.4s}
-@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
-
-/* ── PRINT ── */
-@media print{.sidebar,.chat-bubble-wrap{display:none}.app{display:block}.preview-pane{background:white;padding:0}.offer-preview{box-shadow:none;max-width:100%}body{background:white}}
-
-/* ── RESPONSIVE ── */
-@media(max-width:960px){.app{flex-direction:column}.sidebar{width:100%;min-width:unset}.preview-pane{padding:16px}.offer-top,.offer-body,.offer-footer{padding-left:24px;padding-right:24px}.lime-strip{padding-left:24px;padding-right:24px}.offer-grid-2{grid-template-columns:1fr}#chatPanel{width:calc(100vw - 32px);right:16px}}
+/* PRINT */
+@media print{
+  #sidebar,#chat-bubble,#chat-panel,.modal-overlay{display:none!important;}
+  #preview{background:#fff;padding:0;}
+  #offer-doc{box-shadow:none;border-radius:0;max-width:100%;}
+}
 </style>
 </head>
 <body>
-<div class="app">
 
-  <!-- ══════ SIDEBAR ══════ -->
-  <div class="sidebar">
-    <div class="sidebar-header">
-      <img class="bb-logo" src="https://bellabona.com/hubfs/logo-bellabona.svg" alt="Bella&Bona" onerror="this.outerHTML='<span style=\'color:white;font-size:18px;font-weight:900;letter-spacing:2px\'>BELLA&amp;BONA</span>'">
-      <span class="badge-tag">Offer Generator</span>
-    </div>
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div id="sidebar-header">
+    <img src="https://bellabona.com/hubfs/logo-bellabona.svg" alt="Bellabona" id="logo-img">
+    <nav id="nav-pills">
+      <button class="active" onclick="showView('offer')">Offer</button>
+      <button onclick="openCatalogModal(false)">Catalog</button>
+      <button onclick="openCustomersModal(false)">Customers</button>
+      <button onclick="openOffersModal()">All Offers</button>
+    </nav>
+    <div class="cloud-dot"></div>
+  </div>
+  <div id="sidebar-body">
 
-    <!-- OFFER DETAILS -->
+    <!-- 1. Offer -->
     <div class="section">
-      <div class="section-title" onclick="toggle(this)">Offer Details <span>▾</span></div>
-      <div class="section-body">
-        <div class="row">
-          <div class="field"><label>Offer Number</label><input type="text" id="offerNumber" placeholder="BB-2026-001" oninput="render()"></div>
-          <div class="field"><label>Offer Date</label><input type="date" id="offerDate" oninput="render()"></div>
+      <div class="section-header open" onclick="toggleSection(this)">
+        <span>📋 Offer</span><span class="chevron">▼</span>
+      </div>
+      <div class="section-body open">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Offer Number</label>
+            <input type="text" id="offerNumber" placeholder="BB-2026-001">
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="offerStatus">
+              <option value="Draft">Draft</option>
+              <option value="Sent">Sent</option>
+              <option value="Accepted">Accepted</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
         </div>
-        <div class="row">
-          <div class="field"><label>Valid Until</label><input type="date" id="validUntil" oninput="render()"></div>
-          <div class="field"><label>Created By</label><input type="text" id="createdBy" placeholder="Your name" oninput="render()"></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Offer Date</label>
+            <input type="date" id="offerDate">
+          </div>
+          <div class="form-group">
+            <label>Valid Until</label>
+            <input type="date" id="validUntil">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Created By</label>
+          <input type="text" id="createdBy" placeholder="Your name">
         </div>
       </div>
     </div>
 
-    <!-- CUSTOMER -->
+    <!-- 2. Customer -->
     <div class="section">
-      <div class="section-title" onclick="toggle(this)">Customer Details <span>▾</span></div>
+      <div class="section-header" onclick="toggleSection(this)">
+        <span>👤 Customer</span><span class="chevron">▼</span>
+      </div>
       <div class="section-body">
-        <div class="field"><label>Company / Organization</label><input type="text" id="company" placeholder="e.g. Moonfare GmbH" oninput="render()"></div>
-        <div class="row">
-          <div class="field"><label>Contact Person</label><input type="text" id="contactName" placeholder="Max Mustermann" oninput="render()"></div>
-          <div class="field"><label>Title / Role</label><input type="text" id="contactTitle" placeholder="Event Manager" oninput="render()"></div>
+        <button class="btn btn-outline btn-sm" style="width:100%;margin-bottom:10px;" onclick="openCustomersModal(true)">🔍 Select Customer</button>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Company</label>
+            <input type="text" id="custCompany" placeholder="Company name" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>Contact</label>
+            <input type="text" id="custContact" placeholder="Full name" oninput="updatePreview()">
+          </div>
         </div>
-        <div class="row">
-          <div class="field"><label>Email</label><input type="email" id="contactEmail" placeholder="max@company.com" oninput="render()"></div>
-          <div class="field"><label>Phone</label><input type="tel" id="contactPhone" placeholder="+49 …" oninput="render()"></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Title</label>
+            <input type="text" id="custTitle" placeholder="Job title" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="custEmail" placeholder="email@example.com" oninput="updatePreview()">
+          </div>
         </div>
-        <div class="field"><label>Billing Address</label><textarea id="billingAddress" placeholder="Street, City, ZIP" rows="2" oninput="render()"></textarea></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="tel" id="custPhone" placeholder="+49 ..." oninput="updatePreview()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Billing Address</label>
+          <textarea id="custAddress" placeholder="Street, City, ZIP, Country" rows="2" oninput="updatePreview()"></textarea>
+        </div>
       </div>
     </div>
 
-    <!-- EVENT -->
+    <!-- 3. Event -->
     <div class="section">
-      <div class="section-title" onclick="toggle(this)">Event Details <span>▾</span></div>
+      <div class="section-header" onclick="toggleSection(this)">
+        <span>🎉 Event</span><span class="chevron">▼</span>
+      </div>
       <div class="section-body">
-        <div class="field"><label>Event Name / Type</label><input type="text" id="eventName" placeholder="e.g. Summer BBQ 2026" oninput="render()"></div>
-        <div class="row">
-          <div class="field"><label>Date</label><input type="date" id="eventDate" oninput="render()"></div>
-          <div class="field"><label>End Date (multi-day)</label><input type="date" id="eventDateEnd" oninput="render()"></div>
+        <div class="form-group">
+          <label>Event Name</label>
+          <input type="text" id="eventName" placeholder="Corporate BBQ, Wedding Reception…" oninput="updatePreview()">
         </div>
-        <div class="row">
-          <div class="field"><label>Time</label><input type="text" id="eventTime" placeholder="12:00 – 16:00" oninput="render()"></div>
-          <div class="field"><label>Number of Guests</label><input type="number" id="guestCount" placeholder="120" min="1" oninput="render()"></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Event Date</label>
+            <input type="date" id="eventDate" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>End Date</label>
+            <input type="date" id="eventEndDate" oninput="updatePreview()">
+          </div>
         </div>
-        <div class="field"><label>Venue / Location</label><input type="text" id="venue" placeholder="e.g. Spreeufer 4, 10178 Berlin" oninput="render()"></div>
-        <div class="field"><label>Setup / Service Info</label><input type="text" id="setupInfo" placeholder="e.g. outdoor, own BBQ grills, 2 chefs on-site" oninput="render()"></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Start Time</label>
+            <input type="time" id="eventTime" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>Guests</label>
+            <input type="number" id="eventGuests" placeholder="50" min="1" oninput="updatePreview()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Venue</label>
+          <input type="text" id="eventVenue" placeholder="Location / address" oninput="updatePreview()">
+        </div>
+        <div class="form-group">
+          <label>Setup Info</label>
+          <textarea id="eventSetup" placeholder="Setup requirements, special notes…" oninput="updatePreview()"></textarea>
+        </div>
       </div>
     </div>
 
-    <!-- ITEMS -->
+    <!-- 4. Menu & Services -->
     <div class="section">
-      <div class="section-title" onclick="toggle(this)">Menu & Services <span>▾</span></div>
+      <div class="section-header" onclick="toggleSection(this)">
+        <span>🍽️ Menu &amp; Services</span><span class="chevron">▼</span>
+      </div>
       <div class="section-body">
-        <div id="itemsContainer"></div>
-        <button class="btn-add" onclick="addItem()">+ Add Item / Package</button>
+        <div id="items-container"></div>
+        <div class="add-btns">
+          <button class="btn btn-outline btn-sm" onclick="openCatalogModal(true)">📚 Add from Catalog</button>
+          <button class="btn btn-lime btn-sm" onclick="addManualItem()">+ Add Manual Item</button>
+        </div>
       </div>
     </div>
 
-    <!-- PRICING -->
+    <!-- 5. Pricing -->
     <div class="section">
-      <div class="section-title" onclick="toggle(this)">Pricing Summary <span>▾</span></div>
+      <div class="section-header" onclick="toggleSection(this)">
+        <span>💶 Pricing</span><span class="chevron">▼</span>
+      </div>
       <div class="section-body">
-        <div class="row">
-          <div class="field">
+        <div class="form-row">
+          <div class="form-group">
             <label>Discount Type</label>
-            <select id="discountType" onchange="render()">
+            <select id="discountType" onchange="updatePreview()">
               <option value="none">No Discount</option>
-              <option value="percent">Percentage (%)</option>
-              <option value="fixed">Fixed Amount (€)</option>
+              <option value="percent">Percentage %</option>
+              <option value="fixed">Fixed €</option>
             </select>
           </div>
-          <div class="field"><label>Discount Value</label><input type="number" id="discountValue" placeholder="0" min="0" step="0.01" oninput="render()"></div>
+          <div class="form-group">
+            <label>Discount Value</label>
+            <input type="number" id="discountValue" placeholder="0" min="0" oninput="updatePreview()">
+          </div>
         </div>
-        <div class="row">
-          <div class="field">
-            <label>VAT Rate</label>
-            <select id="vatRate" onchange="render()">
-              <option value="19">19% MwSt</option>
-              <option value="7">7% MwSt</option>
-              <option value="0">0% (Steuerbefreit)</option>
+        <div class="form-row">
+          <div class="form-group">
+            <label>VAT %</label>
+            <select id="vatRate" onchange="updatePreview()">
+              <option value="19">19%</option>
+              <option value="7">7%</option>
+              <option value="0">0%</option>
             </select>
           </div>
-          <div class="field">
+          <div class="form-group">
             <label>Currency</label>
-            <select id="currency" onchange="render()">
-              <option value="€">EUR (€)</option>
-              <option value="CHF">CHF</option>
-              <option value="$">USD ($)</option>
+            <select id="currency" onchange="updatePreview()">
+              <option value="EUR">EUR €</option>
+              <option value="USD">USD $</option>
+              <option value="GBP">GBP £</option>
+              <option value="CHF">CHF Fr</option>
             </select>
           </div>
         </div>
-        <div class="pricing-grid" id="pricingSummary"></div>
       </div>
     </div>
 
-    <!-- NOTES & TERMS -->
+    <!-- 6. Notes & Terms -->
     <div class="section">
-      <div class="section-title" onclick="toggle(this)">Notes & Terms <span>▾</span></div>
-      <div class="section-body">
-        <div class="field"><label>Special Notes / Inclusions</label><textarea id="notes" rows="3" placeholder="What's included, dietary options, logistics…" oninput="render()"></textarea></div>
-        <div class="field"><label>Payment Terms</label><input type="text" id="paymentTerms" placeholder="e.g. 50% deposit on booking, balance 14 days before event" oninput="render()"></div>
-        <div class="field"><label>Cancellation Policy</label><textarea id="cancellationPolicy" rows="2" placeholder="e.g. &lt;7 days: 100%, &lt;14 days: 50%…" oninput="render()"></textarea></div>
-        <div class="field"><label>Internal Notes (not printed)</label><textarea id="internalNotes" rows="2" placeholder="Margin notes, source, follow-up…" oninput="render()"></textarea></div>
+      <div class="section-header" onclick="toggleSection(this)">
+        <span>📝 Notes &amp; Terms</span><span class="chevron">▼</span>
       </div>
-    </div>
-
-    <!-- CONTACT -->
-    <div class="section">
-      <div class="section-title" onclick="toggle(this)">Your Contact Info <span>▾</span></div>
       <div class="section-body">
-        <div class="row">
-          <div class="field"><label>Email</label><input type="email" id="bbEmail" value="hello@bellabona.com" oninput="render()"></div>
-          <div class="field"><label>Phone</label><input type="tel" id="bbPhone" value="+49 30 …" oninput="render()"></div>
+        <div class="form-group">
+          <label>Notes (visible on offer)</label>
+          <textarea id="offerNotes" placeholder="Service includes…" oninput="updatePreview()"></textarea>
         </div>
-        <div class="field"><label>Website</label><input type="text" id="bbWebsite" value="www.bellabona.com" oninput="render()"></div>
+        <div class="form-group">
+          <label>Payment Terms</label>
+          <textarea id="paymentTerms" placeholder="50% upfront, balance 14 days before event" oninput="updatePreview()"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Cancellation Policy</label>
+          <textarea id="cancellationPolicy" placeholder="Cancellation more than 30 days prior…" oninput="updatePreview()"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Internal Notes</label>
+          <textarea id="internalNotes" placeholder="Not printed on offer…"></textarea>
+        </div>
       </div>
     </div>
 
-    <!-- ACTIONS -->
-    <div class="actions">
-      <button class="btn-primary" onclick="printOffer()">🖨 Print / Save as PDF</button>
-      <button class="btn-lime" onclick="copyText()">📋 Copy Offer as Text</button>
-      <div class="copy-success" id="copySuccess">✓ Copied to clipboard!</div>
-      <div style="display:flex;gap:6px">
-        <button class="btn-outline" style="flex:1" onclick="saveToLocal()">💾 Save Draft</button>
-        <button class="btn-outline" style="flex:1" onclick="loadFromLocal()">📂 Load Draft</button>
-        <button class="btn-outline" style="flex:1" onclick="resetForm()">↺ New</button>
+    <!-- 7. Contact Info -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span>📞 Contact Info</span><span class="chevron">▼</span>
+      </div>
+      <div class="section-body">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="contactEmail" value="info@bellabona.com" oninput="updatePreview()">
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="tel" id="contactPhone" value="+49 30 1234567" oninput="updatePreview()">
+        </div>
+        <div class="form-group">
+          <label>Website</label>
+          <input type="text" id="contactWebsite" value="bellabona.com" oninput="updatePreview()">
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- ══════ PREVIEW ══════ -->
-  <div class="preview-pane">
-    <div class="offer-preview" id="offerPreview"></div>
+  </div><!-- end sidebar-body -->
+
+  <div id="sidebar-actions">
+    <button class="btn btn-green" onclick="saveOffer()">☁️ Save to Cloud</button>
+    <div class="action-row">
+      <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Print / PDF</button>
+      <button class="btn btn-outline btn-sm" onclick="copyAsText()">📋 Copy as Text</button>
+    </div>
+    <div class="action-row three">
+      <button class="btn btn-outline btn-sm" onclick="openTemplatesModal()">📑 Use Template</button>
+      <button class="btn btn-lime btn-sm" onclick="newOffer()">✨ New Offer</button>
+      <button class="btn btn-outline btn-sm" onclick="saveLocalDraft()">💾 Local Draft</button>
+    </div>
+  </div>
+</div><!-- end sidebar -->
+
+<!-- PREVIEW -->
+<div id="preview">
+  <div id="offer-doc">
+    <div class="doc-header">
+      <img src="https://bellabona.com/hubfs/logo-bellabona.svg" alt="Bellabona">
+      <div class="doc-header-right">
+        <div class="offer-num" id="prev-offer-num">BB-2026-001</div>
+        <div class="offer-dates" id="prev-offer-dates">Angebot vom – Gültig bis –</div>
+      </div>
+    </div>
+    <div class="doc-lime-strip">
+      <h2 id="prev-event-name">Event Name</h2>
+      <p id="prev-event-details">Datum · Ort · Gäste</p>
+    </div>
+    <div class="doc-body">
+      <div class="doc-section-title">Auftraggeber</div>
+      <div class="customer-grid">
+        <div class="customer-block" id="prev-cust-left"></div>
+        <div class="customer-block" id="prev-cust-right"></div>
+      </div>
+      <div class="doc-section-title">Leistungen &amp; Speisen</div>
+      <table class="services-table" id="prev-services-table">
+        <thead><tr>
+          <th>Artikel</th><th>Typ</th><th>Portionen</th><th>Diät</th><th>Einzelpreis</th><th>Aufschlüsselung</th><th>Gesamt</th>
+        </tr></thead>
+        <tbody id="prev-services-body"></tbody>
+      </table>
+      <div class="totals-box">
+        <div class="totals-inner" id="prev-totals"></div>
+      </div>
+      <div class="doc-section-title">Hinweise &amp; Konditionen</div>
+      <div class="notes-card" id="prev-notes"></div>
+      <div style="height:12px;"></div>
+    </div>
+    <div class="doc-footer">
+      <p id="prev-contact">info@bellabona.com · +49 30 1234567 · bellabona.com</p>
+      <div class="validity" id="prev-validity">Gültig bis –</div>
+    </div>
   </div>
 </div>
 
-<!-- ══════════════ AI CHAT WIDGET ══════════════ -->
-<div id="chatBubble" onclick="toggleChat()" title="AI Menu Assistant">
-  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 10H6v-2h12v2zm0-3H6V7h12v2z"/></svg>
-  <div class="notif" id="chatNotif">!</div>
+<!-- CATALOG MODAL -->
+<div class="modal-overlay" id="catalogModal" onclick="handleOverlayClick(event,'catalogModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>📚 Menu Catalog</h2>
+      <button class="modal-close" onclick="closeModal('catalogModal')">✕</button>
+    </div>
+    <div class="modal-toolbar">
+      <input class="search-input" type="text" id="catSearch" placeholder="Search items…" oninput="renderCatalog()">
+      <select class="filter-select" id="catFilter" onchange="renderCatalog()">
+        <option value="all">All Categories</option>
+        <option value="Dish">🍽 Dishes (BEO)</option>
+        <option value="BBQ">BBQ</option>
+        <option value="Buffet">Buffet</option>
+        <option value="Drinks">Drinks</option>
+        <option value="Service">Service</option>
+        <option value="Equipment">Equipment</option>
+        <option value="Other">Other</option>
+      </select>
+      <button class="btn btn-lime btn-sm" onclick="showCatalogForm(null)">+ Add Item</button>
+    </div>
+    <div id="catalog-add-form" class="modal-form" style="display:none;margin:12px 16px 0;">
+      <h3 id="cat-form-title">New Catalog Item</h3>
+      <div class="form-row">
+        <div class="form-group"><label>Name</label><input type="text" id="cat-name" placeholder="Item name"></div>
+        <div class="form-group"><label>Category</label>
+          <select id="cat-category">
+            <option>BBQ</option><option>Buffet</option><option>Drinks</option><option>Service</option><option>Equipment</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>Description</label><input type="text" id="cat-desc" placeholder="Short description"></div>
+      <div class="form-row three">
+        <div class="form-group"><label>Type</label>
+          <select id="cat-type"><option value="per_person">Per Person</option><option value="fixed">Fixed</option></select>
+        </div>
+        <div class="form-group"><label>Unit Price €</label><input type="number" id="cat-price" placeholder="0.00" step="0.01"></div>
+        <div class="form-group"><label>Default Qty</label><input type="number" id="cat-qty" placeholder="1" min="1"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Diet Type</label>
+          <select id="cat-diet">
+            <option value="omni">🥩 Omni</option><option value="vegetarian">🥗 Vegetarian</option><option value="vegan">🌱 Vegan</option>
+            <option value="halal">☪️ Halal</option><option value="kosher">✡️ Kosher</option><option value="gf">🌾 Gluten-Free</option>
+            <option value="fish">🐟 Fish</option><option value="mixed">🍽️ Mixed</option>
+          </select>
+        </div>
+        <div class="form-group" style="justify-content:flex-end;">
+          <label>Active</label>
+          <input type="checkbox" id="cat-active" checked style="width:auto;margin-top:8px;">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-green btn-sm" onclick="saveCatalogItem()">Save Item</button>
+        <button class="btn btn-outline btn-sm" onclick="hideCatalogForm()">Cancel</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="card-grid" id="catalog-list"></div>
+    </div>
+  </div>
 </div>
 
-<div id="chatPanel">
-  <div class="chat-header">
-    <div class="chat-avatar">🤖</div>
-    <div class="chat-info">
-      <div class="chat-name">Menu AI Assistant</div>
-      <div class="chat-sub">Paste a customer email → get menu suggestions</div>
+<!-- CUSTOMERS MODAL -->
+<div class="modal-overlay" id="customersModal" onclick="handleOverlayClick(event,'customersModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>👤 Customers</h2>
+      <button class="modal-close" onclick="closeModal('customersModal')">✕</button>
     </div>
-    <button class="chat-settings" onclick="toggleSetup()" title="API Settings">⚙</button>
-    <button class="chat-close" onclick="toggleChat()">✕</button>
-  </div>
-
-  <!-- API KEY SETUP -->
-  <div id="chatSetup">
-    <div class="setup-label">Anthropic API Key</div>
-    <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-…" autocomplete="off">
-    <button class="save-key-btn" onclick="saveApiKey()">Save Key</button>
-    <div class="key-status" id="keyStatus">✓ API key saved</div>
-    <div style="font-size:10.5px;color:var(--gray);line-height:1.5">Your key is stored locally in this browser only. Never sent anywhere except directly to Anthropic's API.</div>
-  </div>
-
-  <div id="chatMessages">
-    <div class="msg ai">
-      <div class="msg-bubble">👋 Hi! I'm your menu assistant. Paste a customer email or describe the event requirements, and I'll suggest the perfect menu items for your offer.<br><br>Make sure to set your API key via ⚙ first.</div>
-      <div class="msg-time">Ready</div>
+    <div class="modal-toolbar">
+      <input class="search-input" type="text" id="custSearch" placeholder="Search customers…" oninput="renderCustomers()">
+      <button class="btn btn-lime btn-sm" onclick="showCustomerForm(null)">+ Add Customer</button>
+    </div>
+    <div id="customer-add-form" class="modal-form" style="display:none;margin:12px 16px 0;">
+      <h3 id="cust-form-title">New Customer</h3>
+      <div class="form-row">
+        <div class="form-group"><label>Company</label><input type="text" id="cust-company" placeholder="Company name"></div>
+        <div class="form-group"><label>Contact Name</label><input type="text" id="cust-contact" placeholder="Full name"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Title</label><input type="text" id="cust-title" placeholder="Job title"></div>
+        <div class="form-group"><label>Email</label><input type="email" id="cust-email" placeholder="email@company.com"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Phone</label><input type="tel" id="cust-phone" placeholder="+49..."></div>
+      </div>
+      <div class="form-group"><label>Billing Address</label><textarea id="cust-address" rows="2" placeholder="Street, City, ZIP, Country"></textarea></div>
+      <div class="form-group"><label>Notes</label><textarea id="cust-notes" rows="2" placeholder="Internal notes…"></textarea></div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-green btn-sm" onclick="saveCustomer()">Save Customer</button>
+        <button class="btn btn-outline btn-sm" onclick="hideCustomerForm()">Cancel</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="card-grid" id="customers-list"></div>
     </div>
   </div>
+</div>
 
-  <div class="chat-input-area">
-    <textarea id="chatInput" placeholder="Paste customer email or describe the event here…&#10;e.g. 'Summer BBQ for 80 people, July 2, outdoor, Munich, budget €8000, mix of vegetarians and meat eaters…'"></textarea>
-    <div class="chat-input-footer">
-      <button class="chat-send-btn" id="sendBtn" onclick="sendMessage()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
-        Suggest Menu
-      </button>
-      <button class="chat-clear-btn" onclick="clearChat()">Clear</button>
+<!-- ALL OFFERS MODAL -->
+<div class="modal-overlay" id="offersModal" onclick="handleOverlayClick(event,'offersModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>📂 All Offers</h2>
+      <button class="modal-close" onclick="closeModal('offersModal')">✕</button>
+    </div>
+    <div class="stats-bar" id="offers-stats"></div>
+    <div class="modal-toolbar">
+      <input class="search-input" type="text" id="offersSearch" placeholder="Search offers…" oninput="renderOffers()">
+      <select class="filter-select" id="offersFilter" onchange="renderOffers()">
+        <option value="all">All Status</option>
+        <option value="Draft">Draft</option>
+        <option value="Sent">Sent</option>
+        <option value="Accepted">Accepted</option>
+        <option value="Rejected">Rejected</option>
+      </select>
+    </div>
+    <div class="modal-body">
+      <table class="offers-table" style="width:100%;">
+        <thead><tr>
+          <th>Offer #</th><th>Company</th><th>Event</th><th>Status</th><th>Total</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="offers-list"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- TEMPLATES MODAL -->
+<div class="modal-overlay" id="templatesModal" onclick="handleOverlayClick(event,'templatesModal')">
+  <div class="modal-box" style="max-width:600px;">
+    <div class="modal-header">
+      <h2>📑 Templates</h2>
+      <button class="modal-close" onclick="closeModal('templatesModal')">✕</button>
+    </div>
+    <div class="modal-toolbar">
+      <button class="btn btn-lime btn-sm" onclick="saveCurrentAsTemplate()">💾 Save Current as Template</button>
+    </div>
+    <div class="modal-body">
+      <div id="templates-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- AI CHAT WIDGET -->
+<div id="chat-bubble" onclick="toggleChat()">🤖</div>
+<div id="chat-panel">
+  <div id="chat-panel-header">
+    <h3>🤖 AI Offer Assistant</h3>
+    <div class="chat-header-btns">
+      <button class="modal-close" onclick="openApiKeyModal()" title="Settings">⚙️</button>
+      <button class="modal-close" onclick="toggleChat()">✕</button>
+    </div>
+  </div>
+  <div id="chat-messages">
+    <div class="chat-msg system">Ask me to suggest menu items for your event!</div>
+  </div>
+  <div id="chat-input-row">
+    <textarea id="chat-input" placeholder="e.g. BBQ for 80 guests, vegetarian-friendly…" onkeydown="chatKeyDown(event)"></textarea>
+    <button class="chat-send-btn" onclick="sendChat()">➤</button>
+  </div>
+  <div id="api-key-modal">
+    <div class="api-key-box">
+      <h4>🔑 Claude API Key</h4>
+      <p style="font-size:12px;color:var(--gray);margin-bottom:10px;">Your key is stored in localStorage only.</p>
+      <input type="password" id="api-key-input" placeholder="sk-ant-…" style="margin-bottom:10px;width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;">
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-green btn-sm" onclick="saveApiKey()">Save</button>
+        <button class="btn btn-outline btn-sm" onclick="closeApiKeyModal()">Cancel</button>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-// ── STATE ──
-let items = [], itemCounter = 0;
-const DIET_LABELS = {omni:'🥩 Omnivore', vegetarian:'🥗 Vegetarian', vegan:'🌱 Vegan', halal:'☪️ Halal', kosher:'✡️ Kosher', gf:'🌾 Gluten-free', fish:'🐟 Fish/Seafood', mixed:'🍽 Mixed'};
-const DIET_CLASS = {omni:'diet-omni', vegetarian:'diet-vegetarian', vegan:'diet-vegan', halal:'diet-halal', kosher:'diet-kosher', gf:'diet-gf', fish:'diet-fish', mixed:'diet-omni'};
+// ============================================================
+// FIREBASE INIT
+// ============================================================
+const firebaseConfig = {
+  apiKey:"AIzaSyAAli1-_46ehgM7hzaLLNybkP4MIUw0XZQ",
+  authDomain:"stock-count-d0abf.firebaseapp.com",
+  projectId:"stock-count-d0abf",
+  storageBucket:"stock-count-d0abf.firebasestorage.app",
+  messagingSenderId:"1038826498876",
+  appId:"1:1038826498876:web:fb1f017d91d5ac1188cc39"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-function v(id){ const e=document.getElementById(id); return e?e.value:''; }
-function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmt(n){ return Number(n).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function cur(){ return v('currency')||'€'; }
-function fmtDate(d){ if(!d)return''; const[y,m,day]=d.split('-'); return`${day}.${m}.${y}`; }
-function toggle(el){ const b=el.nextElementSibling; b.classList.toggle('collapsed'); el.querySelector('span').textContent=b.classList.contains('collapsed')?'▸':'▾'; }
+// ============================================================
+// STATE
+// ============================================================
+let offerItems = [];
+let currentDocId = null;
+let catalogFromOffer = false;
+let customersFromOffer = false;
+let editingCatalogId = null;
+let editingCustomerId = null;
+let allCatalogItems = [];
+let allCustomers = [];
+let allOffers = [];
+let allTemplates = [];
 
-// ── ITEMS ──
-function addItem(name='',desc='',type='per_person',qty=1,unitPrice=0,portions=0,dietType='omni'){
-  const id=itemCounter++; items.push({id,name,desc,type,qty,unitPrice,portions,dietType}); renderItems(); render();
+// ============================================================
+// DIET LABELS
+// ============================================================
+const dietLabels = {
+  omni:'🥩 Omni', vegetarian:'🥗 Vegetarian', vegan:'🌱 Vegan',
+  halal:'☪️ Halal', kosher:'✡️ Kosher', gf:'🌾 Gluten-Free',
+  fish:'🐟 Fish', mixed:'🍽️ Mixed'
+};
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  initOfferNumber();
+  initDates();
+  updatePreview();
+  loadLocalDraft();
+  fetchCatalog();
+  fetchCustomers();
+  fetchOffers();
+  fetchTemplates();
+});
+
+function initOfferNumber() {
+  const num = document.getElementById('offerNumber');
+  if (!num.value) {
+    const year = new Date().getFullYear();
+    const rand = Math.floor(100 + Math.random() * 900);
+    num.value = `BB-${year}-${rand}`;
+    num.addEventListener('input', updatePreview);
+  }
 }
-function removeItem(id){ items=items.filter(i=>i.id!==id); renderItems(); render(); }
-function lineTotal(item){ const g=parseInt(v('guestCount'))||1; return item.type==='per_person'?item.qty*item.unitPrice*g:item.qty*item.unitPrice; }
 
-function renderItems(){
-  const c=document.getElementById('itemsContainer'); c.innerHTML='';
-  items.forEach(item=>{
-    const card=document.createElement('div'); card.className='item-card';
-    card.innerHTML=`
-      <button class="item-del" onclick="removeItem(${item.id})">×</button>
-      <div class="item-row1">
-        <input class="item-name-input" type="text" value="${esc(item.name)}" placeholder="Item / Package name" oninput="items.find(i=>i.id==${item.id}).name=this.value;render()">
+function initDates() {
+  const today = new Date();
+  const fmt = d => d.toISOString().split('T')[0];
+  document.getElementById('offerDate').value = fmt(today);
+  const valid = new Date(today); valid.setDate(valid.getDate() + 30);
+  document.getElementById('validUntil').value = fmt(valid);
+  document.getElementById('offerDate').addEventListener('input', updatePreview);
+  document.getElementById('validUntil').addEventListener('input', updatePreview);
+  document.getElementById('offerStatus').addEventListener('change', updatePreview);
+}
+
+// ============================================================
+// SECTIONS TOGGLE
+// ============================================================
+function toggleSection(header) {
+  header.classList.toggle('open');
+  const body = header.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+// ============================================================
+// ITEM MANAGEMENT
+// ============================================================
+function addManualItem(data) {
+  const item = data || {
+    name:'', desc:'', type:'per_person', qty:1, portions:0, unitPrice:0, dietType:'omni'
+  };
+  offerItems.push(item);
+  renderItems();
+  updatePreview();
+}
+
+function addCatalogItemToOffer(ci) {
+  const item = {
+    name: ci.name || '',
+    desc: ci.desc || '',
+    type: ci.type || 'per_person',
+    qty: ci.defaultQty || 1,
+    portions: ci.portions || 0,
+    unitPrice: ci.unitPrice || 0,
+    dietType: ci.dietType || 'omni',
+    // Link to master_overrides for write-back (BEO dishes use dish name as doc ID)
+    masterDocId: ci.source === 'beo' ? ci.name : (ci.masterDocId || null)
+  };
+  offerItems.push(item);
+  renderItems();
+  updatePreview();
+  closeModal('catalogModal');
+}
+
+function removeItem(idx) {
+  offerItems.splice(idx, 1);
+  renderItems();
+  updatePreview();
+}
+
+function renderItems() {
+  const container = document.getElementById('items-container');
+  container.innerHTML = '';
+  offerItems.forEach((item, idx) => {
+    const linked = !!item.masterDocId;
+    const syncTitle = linked ? `Linked to master: ${item.masterDocId}` : 'Not linked to master data';
+    const card = document.createElement('div');
+    card.className = 'item-card';
+    card.id = `item-card-${idx}`;
+    card.innerHTML = `
+      <div class="item-card-top">
+        <div class="ac-wrap">
+          <input type="text" id="ac-input-${idx}" value="${escHtml(item.name)}" placeholder="Type dish name…"
+            autocomplete="off"
+            oninput="onItemNameInput(${idx},this.value)"
+            onchange="updateItemField(${idx},'name',this.value)"
+            onblur="setTimeout(()=>hideAC(${idx}),180)">
+          <div class="ac-dropdown" id="ac-drop-${idx}" style="display:none"></div>
+        </div>
+        <div class="sync-dot ${linked?'synced':'unlinked'}" id="sync-dot-${idx}" title="${syncTitle}"></div>
+        <button class="btn btn-red btn-xs" onclick="removeItem(${idx})">✕</button>
       </div>
-      <div class="item-row2">
+      <div class="item-card-grid">
         <div>
-          <div class="item-label">Type</div>
-          <select onchange="items.find(i=>i.id==${item.id}).type=this.value;render()">
-            <option value="per_person" ${item.type==='per_person'?'selected':''}>/ person</option>
+          <label>Type</label>
+          <select onchange="updateItemField(${idx},'type',this.value)">
+            <option value="per_person" ${item.type==='per_person'?'selected':''}>Per Person</option>
             <option value="fixed" ${item.type==='fixed'?'selected':''}>Fixed</option>
           </select>
         </div>
         <div>
-          <div class="item-label">Qty</div>
-          <input type="number" value="${item.qty}" min="0" step="0.5" placeholder="1" oninput="items.find(i=>i.id==${item.id}).qty=parseFloat(this.value)||0;render()">
+          <label>Qty</label>
+          <input type="number" value="${item.qty||1}" min="1"
+            onchange="updateItemField(${idx},'qty',+this.value)">
         </div>
         <div>
-          <div class="item-label">Portions</div>
-          <input type="number" value="${item.portions||''}" min="0" placeholder="auto" oninput="items.find(i=>i.id==${item.id}).portions=parseInt(this.value)||0;render()">
+          <label>Portions</label>
+          <input type="number" value="${item.portions||0}" min="0" placeholder="auto"
+            onchange="updateItemField(${idx},'portions',+this.value)">
         </div>
         <div>
-          <div class="item-label">Unit €</div>
-          <input type="number" value="${item.unitPrice||''}" min="0" step="0.5" placeholder="0.00" oninput="items.find(i=>i.id==${item.id}).unitPrice=parseFloat(this.value)||0;render()">
+          <label>Unit €</label>
+          <input type="number" value="${item.unitPrice||0}" min="0" step="0.01"
+            onchange="updateItemField(${idx},'unitPrice',+this.value)">
         </div>
-        <div style="display:flex;flex-direction:column;gap:2px">
-          <div class="item-label">Total</div>
-          <div class="item-total-badge" data-it="${item.id}">${cur()} ${fmt(lineTotal(item))}</div>
+        <div>
+          <label>&nbsp;</label>
+          <span class="total-badge" id="total-badge-${idx}">${formatCurrency(lineTotal(item))}</span>
         </div>
       </div>
-      <div class="item-row3">
-        <input class="item-desc-input" type="text" value="${esc(item.desc)}" placeholder="Description (optional)" oninput="items.find(i=>i.id==${item.id}).desc=this.value;render()">
-        <div>
-          <div class="item-label">Diet Type</div>
-          <select style="border:1.5px solid var(--border);border-radius:5px;padding:5px 6px;font-size:11.5px;font-family:var(--font);background:var(--white)" onchange="items.find(i=>i.id==${item.id}).dietType=this.value;render()">
-            ${Object.entries(DIET_LABELS).map(([k,lbl])=>`<option value="${k}" ${item.dietType===k?'selected':''}>${lbl}</option>`).join('')}
-          </select>
-        </div>
+      <div class="item-card-bottom">
+        <input type="text" value="${escHtml(item.desc)}" placeholder="Description / allergens…"
+          onchange="updateItemField(${idx},'desc',this.value)">
+        <select onchange="updateItemField(${idx},'dietType',this.value)" style="width:140px;">
+          ${Object.entries(dietLabels).map(([v,l])=>`<option value="${v}" ${item.dietType===v?'selected':''}>${l}</option>`).join('')}
+        </select>
       </div>`;
-    c.appendChild(card);
+    container.appendChild(card);
   });
 }
 
-// ── PRICING ──
-function calcPricing(){
-  const subtotal=items.reduce((s,i)=>s+lineTotal(i),0);
-  let discount=0; const dt=v('discountType'),dv=parseFloat(v('discountValue'))||0;
-  if(dt==='percent') discount=subtotal*dv/100; else if(dt==='fixed') discount=dv;
-  const net=Math.max(0,subtotal-discount), vatRate=parseFloat(v('vatRate'))||0, vat=net*vatRate/100;
-  return{subtotal,discount,net,vat,vatRate,gross:net+vat};
-}
-function renderPricingSummary(){
-  const p=calcPricing(),c=cur(),dt=v('discountType'),dv=parseFloat(v('discountValue'))||0;
-  let h=`<div class="pricing-row"><span>Subtotal (netto)</span><span class="pricing-value">${c} ${fmt(p.subtotal)}</span></div>`;
-  if(p.discount>0){ h+=`<div class="pricing-row discount"><span>Discount${dt==='percent'?` (${dv}%)`:''}</span><span class="pricing-value">− ${c} ${fmt(p.discount)}</span></div><div class="pricing-row"><span>Net after discount</span><span class="pricing-value">${c} ${fmt(p.net)}</span></div>`; }
-  h+=`<div class="pricing-row vat"><span>MwSt ${p.vatRate}%</span><span class="pricing-value">${c} ${fmt(p.vat)}</span></div>`;
-  h+=`<div class="pricing-row total"><span>TOTAL</span><span class="pricing-value">${c} ${fmt(p.gross)}</span></div>`;
-  document.getElementById('pricingSummary').innerHTML=h;
+function updateItemField(idx, field, value) {
+  offerItems[idx][field] = value;
+  // Update total badge in place (no full re-render)
+  const badge = document.getElementById(`total-badge-${idx}`);
+  if (badge) badge.textContent = formatCurrency(lineTotal(offerItems[idx]));
+  updatePreview();
+  // Sync back to master_overrides if this item is linked and the field is a master field
+  const masterFields = ['unitPrice','portions','qty','dietType','desc'];
+  if (offerItems[idx].masterDocId && masterFields.includes(field)) {
+    scheduleMasterSync(idx);
+  }
 }
 
-// ── RENDER PREVIEW ──
-function render(){
-  renderPricingSummary();
-  items.forEach(item=>{ const el=document.querySelector(`[data-it="${item.id}"]`); if(el) el.textContent=`${cur()} ${fmt(lineTotal(item))}`; });
-  const p=calcPricing(),c=cur(),g=parseInt(v('guestCount'))||0;
-  const dt=v('discountType'),dv=parseFloat(v('discountValue'))||0;
-  let ed=fmtDate(v('eventDate'));
-  if(v('eventDateEnd')&&v('eventDateEnd')!==v('eventDate')) ed+=` – ${fmtDate(v('eventDateEnd'))}`;
-  let metaSpans='';
-  if(ed) metaSpans+=`<span>${ed}${v('eventTime')?' · '+v('eventTime'):''}</span>`;
-  if(v('venue')) metaSpans+=`<span class="loc">${esc(v('venue'))}</span>`;
-  if(g) metaSpans+=`<span class="pax">${g} Personen</span>`;
+// ============================================================
+// PRICING
+// ============================================================
+function getGuests() { return parseInt(document.getElementById('eventGuests').value) || 1; }
 
-  let itemRows='';
-  items.forEach(item=>{
-    const lt=lineTotal(item);
-    const portions=item.portions||(item.type==='per_person'?item.qty*g:item.qty);
-    const bd=item.type==='per_person'?`${item.qty} × ${c}${fmt(item.unitPrice)} × ${g} PAX`:`${item.qty} × ${c}${fmt(item.unitPrice)}`;
-    const typeBadge=item.type==='per_person'?`<span style="font-size:9px;background:#E6FFA9;color:#024930;padding:1px 5px;border-radius:8px;font-weight:700">/Person</span>`:`<span style="font-size:9px;background:#EFF8E8;color:#1A6645;padding:1px 5px;border-radius:8px;font-weight:700">Fixed</span>`;
-    const dietLabel=DIET_LABELS[item.dietType]||'';
-    const dietColor={omni:'#F0F0F0',vegetarian:'#FFF3CD',vegan:'#D4EDDA',halal:'#D1ECF1',kosher:'#E8D5F5',gf:'#FCE8D5',fish:'#CCE5FF',mixed:'#F0F0F0'}[item.dietType]||'#F0F0F0';
-    const dietText={omni:'#444',vegetarian:'#856404',vegan:'#155724',halal:'#0c5460',kosher:'#5A1282',gf:'#7A3300',fish:'#004085',mixed:'#444'}[item.dietType]||'#444';
-    itemRows+=`<tr>
-      <td><div class="item-name">${esc(item.name)||'—'}</div>${item.desc?`<div class="item-desc">${esc(item.desc)}</div>`:''}</td>
-      <td>${typeBadge}</td>
-      <td style="text-align:center">${portions}</td>
-      <td><span style="font-size:9.5px;background:${dietColor};color:${dietText};padding:2px 6px;border-radius:8px;font-weight:700">${dietLabel}</span></td>
-      <td>${c} ${fmt(item.unitPrice)}</td>
-      <td style="color:#666;font-size:10.5px">${bd}</td>
-      <td>${c} ${fmt(lt)}</td>
-    </tr>`;
+function lineTotal(item) {
+  const guests = getGuests();
+  const qty = item.qty || 1;
+  const price = item.unitPrice || 0;
+  if (item.type === 'per_person') return qty * price * guests;
+  return qty * price;
+}
+
+function getPortions(item) {
+  if (item.portions && item.portions > 0) return item.portions;
+  const guests = getGuests();
+  const qty = item.qty || 1;
+  if (item.type === 'per_person') return qty * guests;
+  return qty;
+}
+
+function calcPricing() {
+  const subtotal = offerItems.reduce((s, it) => s + lineTotal(it), 0);
+  const dtype = document.getElementById('discountType').value;
+  const dval = parseFloat(document.getElementById('discountValue').value) || 0;
+  let discount = 0;
+  if (dtype === 'percent') discount = subtotal * dval / 100;
+  else if (dtype === 'fixed') discount = dval;
+  const net = subtotal - discount;
+  const vat = parseFloat(document.getElementById('vatRate').value) || 0;
+  const vatAmount = net * vat / 100;
+  const gross = net + vatAmount;
+  return { subtotal, discount, net, vatAmount, gross, vat };
+}
+
+function getCurrSymbol() {
+  const c = document.getElementById('currency').value;
+  return { EUR:'€', USD:'$', GBP:'£', CHF:'Fr' }[c] || '€';
+}
+
+function formatCurrency(val) {
+  const sym = getCurrSymbol();
+  return `${sym}${(+val).toFixed(2)}`;
+}
+
+// ============================================================
+// LIVE PREVIEW
+// ============================================================
+function updatePreview() {
+  const offerNum = document.getElementById('offerNumber').value || '–';
+  const offerDate = document.getElementById('offerDate').value || '';
+  const validUntil = document.getElementById('validUntil').value || '';
+
+  document.getElementById('prev-offer-num').textContent = offerNum;
+  document.getElementById('prev-offer-dates').textContent =
+    `Angebot vom ${fmtDate(offerDate)} · Gültig bis ${fmtDate(validUntil)}`;
+
+  const eventName = document.getElementById('eventName').value || 'Event Name';
+  document.getElementById('prev-event-name').textContent = eventName;
+  const eDateVal = document.getElementById('eventDate').value;
+  const eTime = document.getElementById('eventTime').value;
+  const guests = document.getElementById('eventGuests').value;
+  const venue = document.getElementById('eventVenue').value;
+  let details = [];
+  if (eDateVal) details.push(fmtDate(eDateVal));
+  if (eTime) details.push(eTime + ' Uhr');
+  if (venue) details.push(venue);
+  if (guests) details.push(guests + ' Gäste');
+  document.getElementById('prev-event-details').textContent = details.join(' · ') || '–';
+
+  // Customer
+  const company = document.getElementById('custCompany').value;
+  const contact = document.getElementById('custContact').value;
+  const title = document.getElementById('custTitle').value;
+  const email = document.getElementById('custEmail').value;
+  const phone = document.getElementById('custPhone').value;
+  const address = document.getElementById('custAddress').value;
+  document.getElementById('prev-cust-left').innerHTML = `
+    <strong>${escHtml(company || '–')}</strong>
+    <p>${escHtml(contact)}${title ? ', ' + escHtml(title) : ''}</p>
+    <p>${escHtml(address).replace(/\n/g,'<br>')}</p>`;
+  document.getElementById('prev-cust-right').innerHTML = `
+    <p>${email ? '✉️ ' + escHtml(email) : ''}</p>
+    <p>${phone ? '📞 ' + escHtml(phone) : ''}</p>`;
+
+  // Services table
+  const tbody = document.getElementById('prev-services-body');
+  tbody.innerHTML = '';
+  offerItems.forEach(it => {
+    const total = lineTotal(it);
+    const portions = getPortions(it);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${escHtml(it.name||'–')}</strong><br><small style="color:var(--gray)">${escHtml(it.desc||'')}</small></td>
+      <td>${it.type==='per_person'?'p.P.':'Fix'}</td>
+      <td>${portions}</td>
+      <td><span class="diet-badge">${dietLabels[it.dietType]||it.dietType||'–'}</span></td>
+      <td>${formatCurrency(it.unitPrice||0)}</td>
+      <td style="font-size:12px;color:var(--gray);">${it.type==='per_person'?`${it.qty||1} × ${getCurrSymbol()}${it.unitPrice||0} × ${getGuests()} Gäste`:`${it.qty||1} × ${getCurrSymbol()}${it.unitPrice||0}`}</td>
+      <td><strong>${formatCurrency(total)}</strong></td>`;
+    tbody.appendChild(tr);
   });
+  if (offerItems.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px;">Keine Positionen vorhanden</td></tr>';
+  }
 
-  let totalsRows=`<div class="totals-row"><span>Netto Subtotal</span><span>${c} ${fmt(p.subtotal)}</span></div>`;
-  if(p.discount>0) totalsRows+=`<div class="totals-row discount"><span>Discount${dt==='percent'?` ${dv}%`:''}</span><span>− ${c} ${fmt(p.discount)}</span></div><div class="totals-row"><span>Net after Discount</span><span>${c} ${fmt(p.net)}</span></div>`;
-  totalsRows+=`<div class="totals-row vat"><span>MwSt ${p.vatRate}%</span><span>${c} ${fmt(p.vat)}</span></div>`;
-  totalsRows+=`<div class="totals-row"><span>TOTAL (brutto)</span><span>${c} ${fmt(p.gross)}</span></div>`;
+  // Totals
+  const p = calcPricing();
+  const totalsEl = document.getElementById('prev-totals');
+  let totHtml = `<div class="totals-row"><span>Zwischensumme</span><span>${formatCurrency(p.subtotal)}</span></div>`;
+  if (p.discount > 0) totHtml += `<div class="totals-row"><span>Rabatt</span><span>−${formatCurrency(p.discount)}</span></div>`;
+  totHtml += `<div class="totals-row"><span>Netto</span><span>${formatCurrency(p.net)}</span></div>`;
+  if (p.vat > 0) totHtml += `<div class="totals-row"><span>MwSt. ${p.vat}%</span><span>${formatCurrency(p.vatAmount)}</span></div>`;
+  totHtml += `<div class="totals-row total"><span>Gesamt</span><span>${formatCurrency(p.gross)}</span></div>`;
+  totalsEl.innerHTML = totHtml;
 
-  const notes=v('notes'),payment=v('paymentTerms'),cancel=v('cancellationPolicy');
-  document.getElementById('offerPreview').innerHTML=`
-    <div class="offer-top">
-      <div class="logo-block">
-        <img src="https://bellabona.com/hubfs/logo-bellabona.svg" alt="Bella&Bona" onerror="this.outerHTML='<span style=\\'color:white;font-size:20px;font-weight:900;letter-spacing:2px\\'>BELLA&amp;BONA</span>'">
-        <div class="tagline">Catering & Events</div>
-      </div>
-      <div class="offer-meta-block">
-        <div class="offer-label">Angebot / Offer</div>
-        <div class="offer-num">${esc(v('offerNumber'))||'—'}</div>
-        <div class="offer-dates">Datum: ${fmtDate(v('offerDate'))||'—'}<br>Gültig bis: ${fmtDate(v('validUntil'))||'—'}</div>
-        ${v('createdBy')?`<div class="offer-by">von ${esc(v('createdBy'))}</div>`:''}
-      </div>
-    </div>
-    ${(v('eventName')||metaSpans)?`<div class="lime-strip"><div class="event-title">${esc(v('eventName'))||'Event'}</div><div class="event-meta">${metaSpans}</div></div>`:''}
-    <div class="offer-body">
-      <div class="offer-section-title">Kunde / Customer</div>
-      <div class="offer-grid-2">
-        <div class="offer-field"><label>Company</label><span>${esc(v('company'))||'—'}</span></div>
-        <div class="offer-field"><label>Contact</label><span>${esc(v('contactName'))||'—'}${v('contactTitle')?` · ${esc(v('contactTitle'))}`:''}</span></div>
-        <div class="offer-field"><label>Email</label><span>${esc(v('contactEmail'))||'—'}</span></div>
-        <div class="offer-field"><label>Phone</label><span>${esc(v('contactPhone'))||'—'}</span></div>
-        ${v('billingAddress')?`<div class="offer-field" style="grid-column:1/-1"><label>Billing Address</label><span style="white-space:pre-wrap">${esc(v('billingAddress'))}</span></div>`:''}
-      </div>
-      ${v('setupInfo')?`<div style="margin-top:8px"><div class="offer-field"><label>Setup / Service</label><span>${esc(v('setupInfo'))}</span></div></div>`:''}
-      <div class="offer-section-title">Leistungen / Services</div>
-      ${items.length?`
-      <table class="offer-items">
-        <thead><tr>
-          <th>Item / Package</th><th>Type</th><th style="text-align:center">Portions</th><th>Diet</th><th>Unit Price</th><th>Breakdown</th><th>Total</th>
-        </tr></thead>
-        <tbody>${itemRows}</tbody>
-      </table>
-      <div class="offer-totals"><div class="totals-box">${totalsRows}</div></div>`
-      :`<p style="color:#aaa;font-size:12px;font-style:italic;padding:10px 0">No items added yet.</p>`}
-      ${(notes||payment||cancel)?`<div class="offer-section-title">Hinweise / Notes</div>`:''}
-      ${notes?`<div class="offer-notes">${esc(notes).replace(/\n/g,'<br>')}</div>`:''}
-      ${payment?`<div style="margin-top:12px"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#6B7A6B;margin-bottom:3px;font-weight:700">Payment Terms</div><div style="font-size:12.5px">${esc(payment)}</div></div>`:''}
-      ${cancel?`<div style="margin-top:9px"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#6B7A6B;margin-bottom:3px;font-weight:700">Cancellation Policy</div><div class="offer-terms">${esc(cancel).replace(/\n/g,'<br>')}</div></div>`:''}
-    </div>
-    <div class="offer-footer">
-      <div class="footer-contact"><strong>Get in Touch</strong>${esc(v('bbEmail'))} · ${esc(v('bbPhone'))}<br>${esc(v('bbWebsite'))}</div>
-      ${v('validUntil')?`<div class="validity">Offer valid until<br>${fmtDate(v('validUntil'))}</div>`:''}
-    </div>`;
+  // Notes
+  const notes = document.getElementById('offerNotes').value;
+  const payment = document.getElementById('paymentTerms').value;
+  const cancel = document.getElementById('cancellationPolicy').value;
+  let notesHtml = '';
+  if (notes) notesHtml += `<p><strong>Hinweise:</strong> ${escHtml(notes)}</p>`;
+  if (payment) notesHtml += `<p><strong>Zahlungsbedingungen:</strong> ${escHtml(payment)}</p>`;
+  if (cancel) notesHtml += `<p><strong>Stornierungsbedingungen:</strong> ${escHtml(cancel)}</p>`;
+  document.getElementById('prev-notes').innerHTML = notesHtml || '<p style="color:var(--gray)">Keine besonderen Hinweise</p>';
+
+  // Footer
+  const cEmail = document.getElementById('contactEmail').value;
+  const cPhone = document.getElementById('contactPhone').value;
+  const cWeb = document.getElementById('contactWebsite').value;
+  document.getElementById('prev-contact').textContent = [cEmail, cPhone, cWeb].filter(Boolean).join(' · ');
+  document.getElementById('prev-validity').textContent = validUntil ? `Gültig bis ${fmtDate(validUntil)}` : 'Gültig bis –';
 }
 
-function printOffer(){ window.print(); }
-function copyText(){
-  const p=calcPricing(),c=cur(),g=parseInt(v('guestCount'))||0;
-  const dt=v('discountType'),dv=parseFloat(v('discountValue'))||0;
-  let ed=fmtDate(v('eventDate')); if(v('eventDateEnd')&&v('eventDateEnd')!==v('eventDate')) ed+=` – ${fmtDate(v('eventDateEnd'))}`;
-  let txt=`ANGEBOT – BELLA&BONA\n${'='.repeat(50)}\nOffer: ${v('offerNumber')||'—'}  |  Date: ${fmtDate(v('offerDate'))||'—'}  |  Valid: ${fmtDate(v('validUntil'))||'—'}\n\n`;
-  txt+=`CUSTOMER\n${'─'.repeat(40)}\n${v('company')||''}${v('contactName')?'\nAttn.: '+v('contactName'):''}\n`;
-  if(v('contactEmail')) txt+=v('contactEmail')+'\n'; if(v('contactPhone')) txt+=v('contactPhone')+'\n';
-  txt+=`\nEVENT\n${'─'.repeat(40)}\n${v('eventName')||'—'}\nDate: ${ed||'—'}${v('eventTime')?' · '+v('eventTime'):''}\nGuests: ${g||'—'}\n`;
-  if(v('venue')) txt+=`Venue: ${v('venue')}\n`;
-  txt+=`\nSERVICES\n${'─'.repeat(40)}\n`;
-  items.forEach(i=>{ const lt=lineTotal(i),pp=i.type==='per_person'?` (${i.qty} × ${c}${fmt(i.unitPrice)} × ${g} PAX)`:`(${i.qty} × ${c}${fmt(i.unitPrice)})`; txt+=`• ${i.name||'—'} ${pp}: ${c} ${fmt(lt)}  [${DIET_LABELS[i.dietType]||''}]\n`; if(i.desc) txt+=`  ${i.desc}\n`; });
-  txt+=`\nPRICING\n${'─'.repeat(40)}\nSubtotal: ${c} ${fmt(p.subtotal)}\n`;
-  if(p.discount>0) txt+=`Discount${dt==='percent'?` ${dv}%`:''}: − ${c} ${fmt(p.discount)}\n`;
-  txt+=`MwSt ${p.vatRate}%: ${c} ${fmt(p.vat)}\nTOTAL: ${c} ${fmt(p.gross)}\n\n`;
-  if(v('notes')) txt+=`NOTES\n${'─'.repeat(40)}\n${v('notes')}\n\n`;
-  if(v('paymentTerms')) txt+=`Payment Terms: ${v('paymentTerms')}\n`;
-  if(v('cancellationPolicy')) txt+=`Cancellation: ${v('cancellationPolicy')}\n\n`;
-  txt+=`${'─'.repeat(40)}\n${v('bbEmail')} · ${v('bbPhone')} · ${v('bbWebsite')}`;
-  navigator.clipboard.writeText(txt).then(()=>{ const s=document.getElementById('copySuccess'); s.style.display='block'; setTimeout(()=>s.style.display='none',2500); });
+function fmtDate(dateStr) {
+  if (!dateStr) return '–';
+  const [y, m, d] = dateStr.split('-');
+  return `${d}.${m}.${y}`;
 }
-const FIELDS=['offerNumber','offerDate','validUntil','createdBy','company','contactName','contactTitle','contactEmail','contactPhone','billingAddress','eventName','eventDate','eventDateEnd','eventTime','guestCount','venue','setupInfo','discountType','discountValue','vatRate','currency','notes','paymentTerms','cancellationPolicy','bbEmail','bbPhone','bbWebsite'];
-function saveToLocal(){ localStorage.setItem('bb_offer_draft',JSON.stringify({fields:FIELDS.reduce((o,id)=>{o[id]=v(id);return o;},{}),items})); alert('Draft saved!'); }
-function loadFromLocal(){ const raw=localStorage.getItem('bb_offer_draft'); if(!raw){alert('No saved draft found.');return;} const data=JSON.parse(raw); Object.entries(data.fields).forEach(([id,val])=>{ const el=document.getElementById(id); if(el) el.value=val; }); items=data.items||[]; itemCounter=items.length?Math.max(...items.map(i=>i.id))+1:0; renderItems(); render(); }
-function resetForm(){ if(!confirm('Start a new offer?'))return; FIELDS.filter(f=>!['discountType','vatRate','currency','bbEmail','bbPhone','bbWebsite'].includes(f)).forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); document.getElementById('discountType').value='none'; document.getElementById('vatRate').value='19'; document.getElementById('currency').value='€'; items=[]; itemCounter=0; renderItems(); autoOfferNumber(); }
-function autoOfferNumber(){ const d=new Date(); document.getElementById('offerNumber').value=`BB-${d.getFullYear()}-${String(Math.floor(Math.random()*900)+100)}`; document.getElementById('offerDate').value=d.toISOString().slice(0,10); const v2=new Date(d); v2.setDate(v2.getDate()+14); document.getElementById('validUntil').value=v2.toISOString().slice(0,10); render(); }
 
-// ══════════════ AI CHATBOT ══════════════
-function toggleChat(){
-  const panel=document.getElementById('chatPanel');
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ============================================================
+// FIREBASE CRUD
+// ============================================================
+// Map BEO diet string → offer dietType code
+function mapBEODiet(diet, glutenFree) {
+  const d = (diet || '').toLowerCase().trim();
+  if (d.includes('vegan')) return 'vegan';
+  if (d.includes('vegetarian')) return 'vegetarian';
+  if (d.includes('halal')) return 'halal';
+  if (d.includes('kosher')) return 'kosher';
+  const gf = (glutenFree || '').toString().toLowerCase().trim();
+  if (gf && gf !== 'false' && gf !== 'no' && gf !== '0' && gf !== '') return 'gf';
+  return 'omni';
+}
+
+async function fetchCatalog() {
+  try {
+    // 1. Load BEO master dishes from shared Firebase collection (master_overrides)
+    const beoSnap = await db.collection('master_overrides').get();
+    const beoItems = beoSnap.docs
+      .filter(d => !d.data()._deleted)
+      .map(d => {
+        const data = d.data();
+        return {
+          id: 'beo__' + d.id,          // prefix to avoid ID collision
+          name: d.id,                   // doc ID is the dish name
+          desc: data.allergens ? 'Allergens: ' + data.allergens : '',
+          category: 'Dish',
+          type: 'per_person',
+          unitPrice: parseFloat(data.price) || 0,
+          defaultQty: 1,
+          dietType: mapBEODiet(data.diet, data.gluten_free),
+          allergens: data.allergens || '',
+          active: true,
+          source: 'beo'                 // mark as coming from BEO site
+        };
+      });
+
+    // 2. Load custom offer packages from bellabona_menu_items
+    const customSnap = await db.collection('bellabona_menu_items').get();
+    const customItems = customSnap.docs.map(d => ({ id: d.id, source: 'custom', ...d.data() }));
+
+    // 3. Merge: custom items first, then BEO dishes
+    allCatalogItems = [...customItems, ...beoItems];
+  } catch(e) { console.warn('Catalog fetch failed', e); }
+}
+
+async function fetchCustomers() {
+  try {
+    const snap = await db.collection('bellabona_customers').get();
+    allCustomers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(e) { console.warn('Customers fetch failed', e); }
+}
+
+async function fetchOffers() {
+  try {
+    const snap = await db.collection('bellabona_offers').orderBy('createdAt','desc').get();
+    allOffers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(e) { console.warn('Offers fetch failed', e); }
+}
+
+async function fetchTemplates() {
+  try {
+    const snap = await db.collection('bellabona_templates').get();
+    allTemplates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(e) { console.warn('Templates fetch failed', e); }
+}
+
+async function saveOffer() {
+  const offerNum = document.getElementById('offerNumber').value;
+  if (!offerNum) { alert('Please enter an offer number.'); return; }
+  const data = {
+    offerNumber: offerNum,
+    status: document.getElementById('offerStatus').value,
+    offerDate: document.getElementById('offerDate').value,
+    validUntil: document.getElementById('validUntil').value,
+    createdBy: document.getElementById('createdBy').value,
+    customer: {
+      company: document.getElementById('custCompany').value,
+      contact: document.getElementById('custContact').value,
+      title: document.getElementById('custTitle').value,
+      email: document.getElementById('custEmail').value,
+      phone: document.getElementById('custPhone').value,
+      address: document.getElementById('custAddress').value
+    },
+    event: {
+      name: document.getElementById('eventName').value,
+      date: document.getElementById('eventDate').value,
+      endDate: document.getElementById('eventEndDate').value,
+      time: document.getElementById('eventTime').value,
+      guests: parseInt(document.getElementById('eventGuests').value) || 0,
+      venue: document.getElementById('eventVenue').value,
+      setup: document.getElementById('eventSetup').value
+    },
+    items: offerItems,
+    pricing: {
+      discountType: document.getElementById('discountType').value,
+      discountValue: parseFloat(document.getElementById('discountValue').value) || 0,
+      vatRate: parseInt(document.getElementById('vatRate').value) || 19,
+      currency: document.getElementById('currency').value
+    },
+    notes: {
+      offerNotes: document.getElementById('offerNotes').value,
+      paymentTerms: document.getElementById('paymentTerms').value,
+      cancellationPolicy: document.getElementById('cancellationPolicy').value,
+      internalNotes: document.getElementById('internalNotes').value
+    },
+    contact: {
+      email: document.getElementById('contactEmail').value,
+      phone: document.getElementById('contactPhone').value,
+      website: document.getElementById('contactWebsite').value
+    },
+    totals: calcPricing(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  try {
+    if (currentDocId) {
+      await db.collection('bellabona_offers').doc(currentDocId).update(data);
+    } else {
+      // check by offerNumber
+      const existing = await db.collection('bellabona_offers')
+        .where('offerNumber','==',offerNum).limit(1).get();
+      if (!existing.empty) {
+        currentDocId = existing.docs[0].id;
+        data.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+        await db.collection('bellabona_offers').doc(currentDocId).update(data);
+      } else {
+        data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+        const ref = await db.collection('bellabona_offers').add(data);
+        currentDocId = ref.id;
+      }
+    }
+    await fetchOffers();
+    showToast('✅ Offer saved to cloud!');
+  } catch(e) {
+    console.error(e);
+    showToast('❌ Save failed: ' + e.message, true);
+  }
+}
+
+// ============================================================
+// CATALOG MODAL
+// ============================================================
+function openCatalogModal(fromOffer) {
+  catalogFromOffer = fromOffer;
+  fetchCatalog().then(renderCatalog);
+  openModal('catalogModal');
+}
+
+function renderCatalog() {
+  const search = (document.getElementById('catSearch').value || '').toLowerCase();
+  const filter = document.getElementById('catFilter').value;
+  const list = document.getElementById('catalog-list');
+  const filtered = allCatalogItems.filter(it => {
+    const matchCat = filter === 'all' || it.category === filter;
+    const matchSearch = !search || (it.name||'').toLowerCase().includes(search) || (it.desc||'').toLowerCase().includes(search);
+    return matchCat && matchSearch;
+  });
+  list.innerHTML = '';
+  if (filtered.length === 0) {
+    list.innerHTML = '<p style="color:var(--gray);padding:20px;">No items found.</p>';
+    return;
+  }
+  filtered.forEach(ci => {
+    const card = document.createElement('div');
+    card.className = 'data-card';
+    card.innerHTML = `
+      <h4>${escHtml(ci.name)}</h4>
+      <p>${escHtml(ci.desc||'')}</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+        <span class="cat-badge">${escHtml(ci.category||'Other')}</span>
+        <span class="diet-badge">${dietLabels[ci.dietType]||ci.dietType||''}</span>
+        ${ci.source==='beo'?'<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;background:#E0EA6833;color:#024930;border:1px solid #E0EA68">BEO</span>':''}
+        ${ci.active===false?'<span class="status-badge" style="background:#fef2f2;color:#991b1b;">Inactive</span>':''}
+      </div>
+      ${ci.allergens?`<p style="font-size:10.5px;color:var(--gray);margin-bottom:3px;">⚠️ ${escHtml(ci.allergens)}</p>`:''}
+      <p style="font-weight:700;color:var(--green);">€${(ci.unitPrice||0).toFixed(2)} · ${ci.type==='per_person'?'p.P.':'Fix'}</p>
+      <div class="data-card-actions">
+        ${catalogFromOffer ? `<button class="btn btn-lime btn-sm" onclick='addCatalogItemToOffer(${JSON.stringify(ci)})'>+ Add to Offer</button>` : ''}
+        ${ci.source === 'beo'
+          ? `<span style="font-size:10px;color:var(--gray);padding:4px 8px;background:var(--cream);border-radius:6px;border:1px solid var(--border)">Managed in BEO site</span>`
+          : `<button class="btn btn-outline btn-sm" onclick="showCatalogForm('${ci.id}')">✏️ Edit</button>
+             <button class="btn btn-red btn-sm" onclick="deleteCatalogItem('${ci.id}')">🗑️ Delete</button>`
+        }
+      </div>`;
+    list.appendChild(card);
+  });
+}
+
+function showCatalogForm(id) {
+  editingCatalogId = id;
+  const form = document.getElementById('catalog-add-form');
+  form.style.display = 'block';
+  if (id) {
+    const ci = allCatalogItems.find(x => x.id === id);
+    if (ci) {
+      document.getElementById('cat-form-title').textContent = 'Edit Item';
+      document.getElementById('cat-name').value = ci.name || '';
+      document.getElementById('cat-desc').value = ci.desc || '';
+      document.getElementById('cat-category').value = ci.category || 'BBQ';
+      document.getElementById('cat-type').value = ci.type || 'per_person';
+      document.getElementById('cat-price').value = ci.unitPrice || 0;
+      document.getElementById('cat-qty').value = ci.defaultQty || 1;
+      document.getElementById('cat-diet').value = ci.dietType || 'omni';
+      document.getElementById('cat-active').checked = ci.active !== false;
+    }
+  } else {
+    document.getElementById('cat-form-title').textContent = 'New Catalog Item';
+    document.getElementById('cat-name').value = '';
+    document.getElementById('cat-desc').value = '';
+    document.getElementById('cat-category').value = 'BBQ';
+    document.getElementById('cat-type').value = 'per_person';
+    document.getElementById('cat-price').value = '';
+    document.getElementById('cat-qty').value = 1;
+    document.getElementById('cat-diet').value = 'omni';
+    document.getElementById('cat-active').checked = true;
+  }
+}
+
+function hideCatalogForm() {
+  document.getElementById('catalog-add-form').style.display = 'none';
+  editingCatalogId = null;
+}
+
+async function saveCatalogItem() {
+  const data = {
+    name: document.getElementById('cat-name').value.trim(),
+    desc: document.getElementById('cat-desc').value.trim(),
+    category: document.getElementById('cat-category').value,
+    type: document.getElementById('cat-type').value,
+    unitPrice: parseFloat(document.getElementById('cat-price').value) || 0,
+    defaultQty: parseInt(document.getElementById('cat-qty').value) || 1,
+    dietType: document.getElementById('cat-diet').value,
+    active: document.getElementById('cat-active').checked,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if (!data.name) { alert('Name is required.'); return; }
+  try {
+    if (editingCatalogId) {
+      await db.collection('bellabona_menu_items').doc(editingCatalogId).update(data);
+    } else {
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection('bellabona_menu_items').add(data);
+    }
+    await fetchCatalog();
+    renderCatalog();
+    hideCatalogForm();
+    showToast('✅ Catalog item saved!');
+  } catch(e) {
+    showToast('❌ Error: ' + e.message, true);
+  }
+}
+
+async function deleteCatalogItem(id) {
+  if (!confirm('Delete this catalog item?')) return;
+  try {
+    await db.collection('bellabona_menu_items').doc(id).delete();
+    await fetchCatalog();
+    renderCatalog();
+    showToast('🗑️ Item deleted.');
+  } catch(e) {
+    showToast('❌ Error: ' + e.message, true);
+  }
+}
+
+// ============================================================
+// CUSTOMERS MODAL
+// ============================================================
+function openCustomersModal(fromOffer) {
+  customersFromOffer = fromOffer;
+  fetchCustomers().then(renderCustomers);
+  openModal('customersModal');
+}
+
+function renderCustomers() {
+  const search = (document.getElementById('custSearch').value || '').toLowerCase();
+  const list = document.getElementById('customers-list');
+  const filtered = allCustomers.filter(c =>
+    !search ||
+    (c.company||'').toLowerCase().includes(search) ||
+    (c.contactName||'').toLowerCase().includes(search) ||
+    (c.email||'').toLowerCase().includes(search)
+  );
+  list.innerHTML = '';
+  if (filtered.length === 0) {
+    list.innerHTML = '<p style="color:var(--gray);padding:20px;">No customers found.</p>';
+    return;
+  }
+  filtered.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'data-card';
+    card.innerHTML = `
+      <h4>${escHtml(c.company||'–')}</h4>
+      <p>${escHtml(c.contactName||'')}${c.title ? ', '+escHtml(c.title) : ''}</p>
+      <p>✉️ ${escHtml(c.email||'–')}</p>
+      <p>📞 ${escHtml(c.phone||'–')}</p>
+      <div class="data-card-actions">
+        ${customersFromOffer ? `<button class="btn btn-lime btn-sm" onclick="selectCustomer('${c.id}')">✓ Select</button>` : ''}
+        <button class="btn btn-outline btn-sm" onclick="showCustomerForm('${c.id}')">✏️ Edit</button>
+        <button class="btn btn-red btn-sm" onclick="deleteCustomer('${c.id}')">🗑️ Delete</button>
+      </div>`;
+    list.appendChild(card);
+  });
+}
+
+function selectCustomer(id) {
+  const c = allCustomers.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('custCompany').value = c.company || '';
+  document.getElementById('custContact').value = c.contactName || '';
+  document.getElementById('custTitle').value = c.title || '';
+  document.getElementById('custEmail').value = c.email || '';
+  document.getElementById('custPhone').value = c.phone || '';
+  document.getElementById('custAddress').value = c.billingAddress || '';
+  updatePreview();
+  closeModal('customersModal');
+}
+
+function showCustomerForm(id) {
+  editingCustomerId = id;
+  const form = document.getElementById('customer-add-form');
+  form.style.display = 'block';
+  if (id) {
+    const c = allCustomers.find(x => x.id === id);
+    if (c) {
+      document.getElementById('cust-form-title').textContent = 'Edit Customer';
+      document.getElementById('cust-company').value = c.company || '';
+      document.getElementById('cust-contact').value = c.contactName || '';
+      document.getElementById('cust-title').value = c.title || '';
+      document.getElementById('cust-email').value = c.email || '';
+      document.getElementById('cust-phone').value = c.phone || '';
+      document.getElementById('cust-address').value = c.billingAddress || '';
+      document.getElementById('cust-notes').value = c.notes || '';
+    }
+  } else {
+    document.getElementById('cust-form-title').textContent = 'New Customer';
+    ['cust-company','cust-contact','cust-title','cust-email','cust-phone','cust-address','cust-notes'].forEach(id2 => {
+      document.getElementById(id2).value = '';
+    });
+  }
+}
+
+function hideCustomerForm() {
+  document.getElementById('customer-add-form').style.display = 'none';
+  editingCustomerId = null;
+}
+
+async function saveCustomer() {
+  const data = {
+    company: document.getElementById('cust-company').value.trim(),
+    contactName: document.getElementById('cust-contact').value.trim(),
+    title: document.getElementById('cust-title').value.trim(),
+    email: document.getElementById('cust-email').value.trim(),
+    phone: document.getElementById('cust-phone').value.trim(),
+    billingAddress: document.getElementById('cust-address').value.trim(),
+    notes: document.getElementById('cust-notes').value.trim(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if (!data.company) { alert('Company name is required.'); return; }
+  try {
+    if (editingCustomerId) {
+      await db.collection('bellabona_customers').doc(editingCustomerId).update(data);
+    } else {
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection('bellabona_customers').add(data);
+    }
+    await fetchCustomers();
+    renderCustomers();
+    hideCustomerForm();
+    showToast('✅ Customer saved!');
+  } catch(e) {
+    showToast('❌ Error: ' + e.message, true);
+  }
+}
+
+async function deleteCustomer(id) {
+  if (!confirm('Delete this customer?')) return;
+  try {
+    await db.collection('bellabona_customers').doc(id).delete();
+    await fetchCustomers();
+    renderCustomers();
+    showToast('🗑️ Customer deleted.');
+  } catch(e) {
+    showToast('❌ Error: ' + e.message, true);
+  }
+}
+
+// ============================================================
+// ALL OFFERS MODAL
+// ============================================================
+function openOffersModal() {
+  fetchOffers().then(() => {
+    renderOffersStats();
+    renderOffers();
+  });
+  openModal('offersModal');
+}
+
+function renderOffersStats() {
+  const stats = document.getElementById('offers-stats');
+  const p = calcPricing();
+  const total = allOffers.reduce((s, o) => s + (o.totals?.gross || 0), 0);
+  const statuses = ['Draft','Sent','Accepted','Rejected'];
+  let html = `<div class="stat-chip"><span class="val">${allOffers.length}</span><span class="lbl">Total</span></div>`;
+  html += `<div class="stat-chip"><span class="val">€${total.toFixed(0)}</span><span class="lbl">Pipeline</span></div>`;
+  statuses.forEach(s => {
+    const cnt = allOffers.filter(o => o.status === s).length;
+    html += `<div class="stat-chip"><span class="val">${cnt}</span><span class="lbl">${s}</span></div>`;
+  });
+  stats.innerHTML = html;
+}
+
+function renderOffers() {
+  const search = (document.getElementById('offersSearch').value || '').toLowerCase();
+  const filter = document.getElementById('offersFilter').value;
+  const tbody = document.getElementById('offers-list');
+  const filtered = allOffers.filter(o => {
+    const matchStatus = filter === 'all' || o.status === filter;
+    const matchSearch = !search ||
+      (o.offerNumber||'').toLowerCase().includes(search) ||
+      (o.customer?.company||'').toLowerCase().includes(search) ||
+      (o.event?.name||'').toLowerCase().includes(search);
+    return matchStatus && matchSearch;
+  });
+  tbody.innerHTML = '';
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray);">No offers found.</td></tr>';
+    return;
+  }
+  filtered.forEach(o => {
+    const tr = document.createElement('tr');
+    const statusClass = `status-${(o.status||'draft').toLowerCase()}`;
+    tr.innerHTML = `
+      <td><strong>${escHtml(o.offerNumber||'–')}</strong></td>
+      <td>${escHtml(o.customer?.company||'–')}</td>
+      <td>${escHtml(o.event?.name||'–')}</td>
+      <td><span class="status-badge ${statusClass}">${escHtml(o.status||'Draft')}</span></td>
+      <td><strong>€${(o.totals?.gross||0).toFixed(2)}</strong></td>
+      <td>
+        <button class="btn btn-outline btn-xs" onclick="loadOffer('${o.id}')">📂 Load</button>
+        <button class="btn btn-red btn-xs" onclick="deleteOffer('${o.id}')">🗑️</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function loadOffer(id) {
+  const o = allOffers.find(x => x.id === id);
+  if (!o) return;
+  currentDocId = id;
+  document.getElementById('offerNumber').value = o.offerNumber || '';
+  document.getElementById('offerStatus').value = o.status || 'Draft';
+  document.getElementById('offerDate').value = o.offerDate || '';
+  document.getElementById('validUntil').value = o.validUntil || '';
+  document.getElementById('createdBy').value = o.createdBy || '';
+  if (o.customer) {
+    document.getElementById('custCompany').value = o.customer.company || '';
+    document.getElementById('custContact').value = o.customer.contact || '';
+    document.getElementById('custTitle').value = o.customer.title || '';
+    document.getElementById('custEmail').value = o.customer.email || '';
+    document.getElementById('custPhone').value = o.customer.phone || '';
+    document.getElementById('custAddress').value = o.customer.address || '';
+  }
+  if (o.event) {
+    document.getElementById('eventName').value = o.event.name || '';
+    document.getElementById('eventDate').value = o.event.date || '';
+    document.getElementById('eventEndDate').value = o.event.endDate || '';
+    document.getElementById('eventTime').value = o.event.time || '';
+    document.getElementById('eventGuests').value = o.event.guests || '';
+    document.getElementById('eventVenue').value = o.event.venue || '';
+    document.getElementById('eventSetup').value = o.event.setup || '';
+  }
+  offerItems = (o.items || []).map(it => ({ ...it }));
+  renderItems();
+  if (o.pricing) {
+    document.getElementById('discountType').value = o.pricing.discountType || 'none';
+    document.getElementById('discountValue').value = o.pricing.discountValue || 0;
+    document.getElementById('vatRate').value = o.pricing.vatRate || 19;
+    document.getElementById('currency').value = o.pricing.currency || 'EUR';
+  }
+  if (o.notes) {
+    document.getElementById('offerNotes').value = o.notes.offerNotes || '';
+    document.getElementById('paymentTerms').value = o.notes.paymentTerms || '';
+    document.getElementById('cancellationPolicy').value = o.notes.cancellationPolicy || '';
+    document.getElementById('internalNotes').value = o.notes.internalNotes || '';
+  }
+  if (o.contact) {
+    document.getElementById('contactEmail').value = o.contact.email || 'info@bellabona.com';
+    document.getElementById('contactPhone').value = o.contact.phone || '+49 30 1234567';
+    document.getElementById('contactWebsite').value = o.contact.website || 'bellabona.com';
+  }
+  updatePreview();
+  closeModal('offersModal');
+  showToast('📂 Offer loaded!');
+}
+
+async function deleteOffer(id) {
+  if (!confirm('Delete this offer permanently?')) return;
+  try {
+    await db.collection('bellabona_offers').doc(id).delete();
+    if (currentDocId === id) currentDocId = null;
+    await fetchOffers();
+    renderOffersStats();
+    renderOffers();
+    showToast('🗑️ Offer deleted.');
+  } catch(e) {
+    showToast('❌ Error: ' + e.message, true);
+  }
+}
+
+// ============================================================
+// TEMPLATES MODAL
+// ============================================================
+function openTemplatesModal() {
+  fetchTemplates().then(renderTemplates);
+  openModal('templatesModal');
+}
+
+function renderTemplates() {
+  const list = document.getElementById('templates-list');
+  list.innerHTML = '';
+  if (allTemplates.length === 0) {
+    list.innerHTML = '<p style="color:var(--gray);padding:20px;">No templates yet. Save the current items as a template!</p>';
+    return;
+  }
+  allTemplates.forEach(t => {
+    const card = document.createElement('div');
+    card.className = 'data-card';
+    card.style.marginBottom = '10px';
+    card.innerHTML = `
+      <h4>${escHtml(t.name||'–')}</h4>
+      <p>Event type: ${escHtml(t.eventType||'–')} · ${(t.items||[]).length} items</p>
+      <div class="data-card-actions">
+        <button class="btn btn-lime btn-sm" onclick="loadTemplate('${t.id}')">📂 Load</button>
+        <button class="btn btn-red btn-sm" onclick="deleteTemplate('${t.id}')">🗑️ Delete</button>
+      </div>`;
+    list.appendChild(card);
+  });
+}
+
+function loadTemplate(id) {
+  const t = allTemplates.find(x => x.id === id);
+  if (!t) return;
+  offerItems = (t.items || []).map(it => ({ ...it }));
+  renderItems();
+  updatePreview();
+  closeModal('templatesModal');
+  showToast('📑 Template loaded!');
+}
+
+async function deleteTemplate(id) {
+  if (!confirm('Delete this template?')) return;
+  try {
+    await db.collection('bellabona_templates').doc(id).delete();
+    await fetchTemplates();
+    renderTemplates();
+    showToast('🗑️ Template deleted.');
+  } catch(e) {
+    showToast('❌ Error: ' + e.message, true);
+  }
+}
+
+async function saveCurrentAsTemplate() {
+  const name = prompt('Template name:');
+  if (!name) return;
+  const eventType = prompt('Event type (e.g. BBQ, Wedding, Corporate):') || 'General';
+  if (offerItems.length === 0) { alert('No items to save.'); return; }
+  try {
+    await db.collection('bellabona_templates').add({
+      name, eventType,
+      items: offerItems,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await fetchTemplates();
+    renderTemplates();
+    showToast('✅ Template saved!');
+  } catch(e) {
+    showToast('❌ Error: ' + e.message, true);
+  }
+}
+
+// ============================================================
+// MISC ACTIONS
+// ============================================================
+function newOffer() {
+  if (!confirm('Start a new offer? Unsaved changes will be lost.')) return;
+  currentDocId = null;
+  offerItems = [];
+  renderItems();
+  document.getElementById('offerNumber').value = '';
+  initOfferNumber();
+  document.getElementById('offerStatus').value = 'Draft';
+  initDates();
+  ['createdBy','custCompany','custContact','custTitle','custEmail','custPhone','custAddress',
+   'eventName','eventDate','eventEndDate','eventTime','eventGuests','eventVenue','eventSetup',
+   'discountValue','offerNotes','paymentTerms','cancellationPolicy','internalNotes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('discountType').value = 'none';
+  document.getElementById('vatRate').value = '19';
+  document.getElementById('currency').value = 'EUR';
+  document.getElementById('contactEmail').value = 'info@bellabona.com';
+  document.getElementById('contactPhone').value = '+49 30 1234567';
+  document.getElementById('contactWebsite').value = 'bellabona.com';
+  updatePreview();
+}
+
+function saveLocalDraft() {
+  const state = {
+    offerNumber: document.getElementById('offerNumber').value,
+    offerStatus: document.getElementById('offerStatus').value,
+    offerDate: document.getElementById('offerDate').value,
+    validUntil: document.getElementById('validUntil').value,
+    createdBy: document.getElementById('createdBy').value,
+    custCompany: document.getElementById('custCompany').value,
+    custContact: document.getElementById('custContact').value,
+    custTitle: document.getElementById('custTitle').value,
+    custEmail: document.getElementById('custEmail').value,
+    custPhone: document.getElementById('custPhone').value,
+    custAddress: document.getElementById('custAddress').value,
+    eventName: document.getElementById('eventName').value,
+    eventDate: document.getElementById('eventDate').value,
+    eventEndDate: document.getElementById('eventEndDate').value,
+    eventTime: document.getElementById('eventTime').value,
+    eventGuests: document.getElementById('eventGuests').value,
+    eventVenue: document.getElementById('eventVenue').value,
+    eventSetup: document.getElementById('eventSetup').value,
+    items: offerItems,
+    discountType: document.getElementById('discountType').value,
+    discountValue: document.getElementById('discountValue').value,
+    vatRate: document.getElementById('vatRate').value,
+    currency: document.getElementById('currency').value,
+    offerNotes: document.getElementById('offerNotes').value,
+    paymentTerms: document.getElementById('paymentTerms').value,
+    cancellationPolicy: document.getElementById('cancellationPolicy').value,
+    internalNotes: document.getElementById('internalNotes').value,
+    contactEmail: document.getElementById('contactEmail').value,
+    contactPhone: document.getElementById('contactPhone').value,
+    contactWebsite: document.getElementById('contactWebsite').value,
+    currentDocId
+  };
+  localStorage.setItem('bb_draft', JSON.stringify(state));
+  showToast('💾 Draft saved locally!');
+}
+
+function loadLocalDraft() {
+  const raw = localStorage.getItem('bb_draft');
+  if (!raw) return;
+  try {
+    const s = JSON.parse(raw);
+    const fields = ['offerNumber','offerDate','validUntil','createdBy','custCompany','custContact','custTitle',
+      'custEmail','custPhone','custAddress','eventName','eventDate','eventEndDate','eventTime',
+      'eventGuests','eventVenue','eventSetup','discountType','discountValue','vatRate','currency',
+      'offerNotes','paymentTerms','cancellationPolicy','internalNotes','contactEmail','contactPhone','contactWebsite'];
+    fields.forEach(f => {
+      const el = document.getElementById(f);
+      if (el && s[f] !== undefined) el.value = s[f];
+    });
+    if (s.offerStatus) document.getElementById('offerStatus').value = s.offerStatus;
+    offerItems = s.items || [];
+    currentDocId = s.currentDocId || null;
+    renderItems();
+    updatePreview();
+  } catch(e) { console.warn('Failed to load local draft', e); }
+}
+
+function copyAsText() {
+  const guests = document.getElementById('eventGuests').value || '–';
+  const p = calcPricing();
+  let text = `BELLABONA – ANGEBOT\n`;
+  text += `Angebotsnummer: ${document.getElementById('offerNumber').value}\n`;
+  text += `Veranstaltung: ${document.getElementById('eventName').value}\n`;
+  text += `Kunde: ${document.getElementById('custCompany').value}\n`;
+  text += `Gäste: ${guests}\n\n`;
+  text += `POSITIONEN:\n`;
+  offerItems.forEach(it => {
+    text += `  - ${it.name}: ${formatCurrency(lineTotal(it))}\n`;
+  });
+  text += `\nGesamt (brutto): ${formatCurrency(p.gross)}\n`;
+  navigator.clipboard.writeText(text).then(() => showToast('📋 Copied to clipboard!'));
+}
+
+// ============================================================
+// MODAL HELPERS
+// ============================================================
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function handleOverlayClick(e, id) {
+  if (e.target === document.getElementById(id)) closeModal(id);
+}
+
+function showView(view) {
+  document.querySelectorAll('#nav-pills button').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg, isError) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.2);transition:opacity .3s;pointer-events:none;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.background = isError ? 'var(--red)' : 'var(--green)';
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2800);
+}
+
+// ============================================================
+// AI CHAT
+// ============================================================
+function toggleChat() {
+  const panel = document.getElementById('chat-panel');
   panel.classList.toggle('open');
-  if(panel.classList.contains('open')){
-    document.getElementById('chatNotif').style.display='none';
-    const k=localStorage.getItem('bb_api_key');
-    if(!k) document.getElementById('chatSetup').classList.add('visible');
-  }
-}
-function toggleSetup(){ document.getElementById('chatSetup').classList.toggle('visible'); }
-function saveApiKey(){
-  const k=document.getElementById('apiKeyInput').value.trim();
-  if(!k){ alert('Please enter your API key.'); return; }
-  localStorage.setItem('bb_api_key',k);
-  document.getElementById('keyStatus').classList.add('show');
-  document.getElementById('chatSetup').classList.remove('visible');
-  setTimeout(()=>document.getElementById('keyStatus').classList.remove('show'),3000);
-}
-function clearChat(){
-  const msgs=document.getElementById('chatMessages');
-  msgs.innerHTML=`<div class="msg ai"><div class="msg-bubble">Chat cleared. Paste a new customer email or event description to get menu suggestions.</div></div>`;
-}
-function addTyping(){
-  const msgs=document.getElementById('chatMessages');
-  const el=document.createElement('div'); el.className='msg ai'; el.id='typingMsg';
-  el.innerHTML=`<div class="msg-bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
-  msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
-}
-function addMessage(role,html){
-  const msgs=document.getElementById('chatMessages');
-  const el=document.createElement('div'); el.className=`msg ${role}`;
-  const time=new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-  el.innerHTML=`<div class="msg-bubble">${html}</div><div class="msg-time">${time}</div>`;
-  msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight;
 }
 
-async function sendMessage(){
-  const apiKey=localStorage.getItem('bb_api_key');
-  if(!apiKey){ toggleSetup(); addMessage('ai','⚠️ Please set your Anthropic API key first using the ⚙ button above.'); return; }
-  const input=document.getElementById('chatInput');
-  const text=input.value.trim();
-  if(!text) return;
-  addMessage('user',esc(text).replace(/\n/g,'<br>'));
-  input.value='';
-  const btn=document.getElementById('sendBtn'); btn.disabled=true;
-  const typing=addTyping();
-  const guestCount=v('guestCount')||'unknown';
-  const eventType=v('eventName')||'unspecified event';
-  const systemPrompt=`You are a catering menu assistant for Bella&Bona, a premium catering company operating in Berlin and Munich, Germany. You specialize in corporate catering, BBQs, lunches, dinners, and cocktail events.
+function openApiKeyModal() {
+  const modal = document.getElementById('api-key-modal');
+  modal.classList.add('open');
+  const stored = localStorage.getItem('bb_claude_key') || '';
+  document.getElementById('api-key-input').value = stored;
+}
 
-Based on customer requirements, suggest appropriate menu items and packages. Be specific, practical, and price-realistic for the German market.
+function closeApiKeyModal() {
+  document.getElementById('api-key-modal').classList.remove('open');
+}
 
-ALWAYS respond with valid JSON in this exact format (no markdown, no code block, just raw JSON):
+function saveApiKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  localStorage.setItem('bb_claude_key', key);
+  closeApiKeyModal();
+  showToast('🔑 API key saved!');
+}
+
+function chatKeyDown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  const apiKey = localStorage.getItem('bb_claude_key') || '';
+  if (!apiKey) { openApiKeyModal(); return; }
+
+  addChatMsg(msg, 'user');
+  input.value = '';
+
+  // Fetch active catalog items for system prompt
+  await fetchCatalog();
+  const activeCatalog = allCatalogItems.filter(x => x.active !== false);
+
+  // Split into BEO dishes and custom packages for clearer AI context
+  const beoDishes = activeCatalog.filter(x => x.source === 'beo');
+  const customPkgs = activeCatalog.filter(x => x.source !== 'beo');
+
+  const beoDishStr = beoDishes.length
+    ? beoDishes.map(ci =>
+        `  • ${ci.name} | €${(ci.unitPrice||0).toFixed(2)}/p.P. | ${dietLabels[ci.dietType]||ci.dietType}${ci.allergens?' | ⚠️'+ci.allergens:''}`
+      ).join('\n')
+    : '  (no dishes added yet — add them in the BEO site)';
+
+  const customPkgStr = customPkgs.length
+    ? customPkgs.map(ci =>
+        `  • ${ci.name} | €${(ci.unitPrice||0).toFixed(2)} ${ci.type==='per_person'?'p.P.':'fixed'} | ${ci.category||'Other'}`
+      ).join('\n')
+    : '  (no custom packages yet)';
+
+  const guests = document.getElementById('eventGuests').value || '?';
+  const eventName = document.getElementById('eventName').value || '';
+
+  const systemPrompt = `You are a catering offer assistant for Bella&Bona, a premium catering company operating in Berlin and Munich, Germany.
+
+EVENT CONTEXT:
+- Event: ${eventName || 'TBD'}
+- Guests: ${guests}
+
+BELLA&BONA DISH CATALOG (from BEO system — use these names exactly):
+${beoDishStr}
+
+CUSTOM PACKAGES & SERVICES:
+${customPkgStr}
+
+INSTRUCTIONS:
+1. Always prefer items from the dish catalog above — use the exact dish names.
+2. For drinks, service staff, setup — suggest from custom packages if available, otherwise estimate realistic prices.
+3. Suggest a balanced, complete offer: starters/mains/desserts + drinks + service.
+4. Pricing guidance: BBQ/buffet €25–65/p.P., drinks €12–28/p.P., service staff €250–450 fixed, setup €200–500 fixed.
+
+Respond ONLY with valid JSON (no markdown, no explanation outside JSON):
 {
-  "summary": "2-3 sentence analysis of the event requirements",
+  "summary": "2-3 sentence analysis of the event and your approach",
   "items": [
-    {
-      "name": "Item name",
-      "desc": "Brief appetizing description",
-      "type": "per_person",
-      "qty": 1,
-      "unitPrice": 35,
-      "portions": 80,
-      "dietType": "omni",
-      "note": ""
-    }
+    {"name":"exact dish or package name","desc":"short description","type":"per_person","qty":1,"unitPrice":35.00,"portions":0,"dietType":"omni","note":"optional internal note"}
   ],
-  "notes": "Additional recommendations or things to flag"
+  "notes": "Payment terms, logistics, or other recommendations"
 }
+type: "per_person" or "fixed". dietType: omni/vegetarian/vegan/halal/kosher/gf/fish/mixed.`;
 
-dietType options: omni, vegetarian, vegan, halal, kosher, gf, fish, mixed
-type options: per_person, fixed
+  addChatMsg('Thinking…', 'system');
 
-Bella&Bona pricing guidance:
-- BBQ buffet: €25–65/person | Lunch buffet: €15–35/person | Drinks package: €12–28/person
-- Cocktail reception: €20–45/person | Breakfast: €10–20/person
-- Service staff: €250–450 fixed | Setup/delivery: €200–600 fixed | Equipment rental: €150–400 fixed
-Current event context: ${guestCount} guests, ${eventType}`;
-
-  try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2048,system:systemPrompt,messages:[{role:'user',content:text}]})
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: msg }]
+      })
     });
-    typing.remove();
-    if(!resp.ok){ const err=await resp.json(); addMessage('ai',`⚠️ API Error: ${err.error?.message||resp.statusText}`); btn.disabled=false; return; }
-    const data=await resp.json();
-    const raw=data.content[0].text.trim();
-    let parsed;
-    try{ parsed=JSON.parse(raw); }
-    catch(e){
-      const match=raw.match(/\{[\s\S]*\}/);
-      if(match) parsed=JSON.parse(match[0]); else{ addMessage('ai',raw.replace(/\n/g,'<br>')); btn.disabled=false; return; }
+
+    // Remove "Thinking…" system msg
+    const msgs = document.getElementById('chat-messages');
+    const lastSys = msgs.querySelector('.chat-msg.system:last-child');
+    if (lastSys && lastSys.textContent === 'Thinking…') lastSys.remove();
+
+    if (!res.ok) {
+      const err = await res.json();
+      addChatMsg('❌ API Error: ' + (err.error?.message || res.statusText), 'system');
+      return;
     }
-    // Render summary
-    let html=`<strong>📋 Analysis</strong><br>${esc(parsed.summary||'').replace(/\n/g,'<br>')}<br><br><strong>💡 Suggested Items:</strong>`;
-    addMessage('ai',html);
-    // Render each item as a suggestion card
-    (parsed.items||[]).forEach((item,idx)=>{
-      const msgs=document.getElementById('chatMessages');
-      const card=document.createElement('div'); card.className='suggestion-card';
-      const typeLabel=item.type==='per_person'?`<span class="s-badge type-pp">/Person</span>`:`<span class="s-badge type-fixed">Fixed</span>`;
-      const dietLabel=item.dietType?`<span class="s-badge ${DIET_CLASS[item.dietType]||'diet-omni'}">${DIET_LABELS[item.dietType]||item.dietType}</span>`:'';
-      const portionText=item.portions?`${item.portions} portions`:'';
-      card.innerHTML=`
-        <div class="s-name">${esc(item.name||'')}</div>
-        <div class="s-desc">${esc(item.desc||'')}</div>
-        <div class="s-meta">${typeLabel}${dietLabel}<span class="s-price">€ ${fmt(item.unitPrice||0)} ${item.type==='per_person'?'/person':''}</span>${portionText?`<span style="font-size:10px;color:#888">${portionText}</span>`:''}</div>
-        ${item.note?`<div style="font-size:10.5px;color:#888;margin-bottom:6px;font-style:italic">💬 ${esc(item.note)}</div>`:''}
-        <button class="add-to-offer-btn" id="add-btn-${idx}" onclick="addSuggestionToOffer(${JSON.stringify(item).replace(/"/g,'&quot;')},${idx})">+ Add to Offer</button>`;
-      msgs.appendChild(card); msgs.scrollTop=msgs.scrollHeight;
-    });
-    if(parsed.notes){
-      addMessage('ai',`<strong>📝 Notes:</strong><br>${esc(parsed.notes).replace(/\n/g,'<br>')}`);
+
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '';
+
+    // Try to parse JSON
+    let parsed = null;
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
+    } catch(e) { /* not json */ }
+
+    if (parsed) {
+      renderAISuggestion(parsed);
+    } else {
+      addChatMsg(text, 'ai');
     }
-    // Show notification
-    if(!document.getElementById('chatPanel').classList.contains('open')){
-      const n=document.getElementById('chatNotif'); n.style.display='flex';
-    }
-  }catch(err){
-    typing.remove(); addMessage('ai',`⚠️ Error: ${err.message}`);
+  } catch(e) {
+    const msgs = document.getElementById('chat-messages');
+    const lastSys = msgs.querySelector('.chat-msg.system:last-child');
+    if (lastSys && lastSys.textContent === 'Thinking…') lastSys.remove();
+    addChatMsg('❌ Network error: ' + e.message, 'system');
   }
-  btn.disabled=false;
 }
 
-function addSuggestionToOffer(item,idx){
-  addItem(item.name||'',item.desc||'',item.type||'per_person',item.qty||1,item.unitPrice||0,item.portions||0,item.dietType||'omni');
-  const btn=document.getElementById(`add-btn-${idx}`);
-  if(btn){ btn.classList.add('added'); btn.textContent='✓ Added to Offer'; btn.onclick=null; }
+function addChatMsg(text, role) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `chat-msg ${role}`;
+  div.textContent = text;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
 }
 
-// Allow Ctrl/Cmd+Enter to send
-document.addEventListener('keydown',function(e){
-  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'&&document.activeElement.id==='chatInput') sendMessage();
-});
+function renderAISuggestion(parsed) {
+  const msgs = document.getElementById('chat-messages');
+  const wrapper = document.createElement('div');
+  wrapper.className = 'chat-msg ai';
+  wrapper.style.maxWidth = '100%';
 
-// ── INIT ──
-autoOfferNumber();
-addItem('','','per_person',1,0,0,'omni');
+  let html = `<p style="margin-bottom:8px;">${escHtml(parsed.summary||'')}</p>`;
+  if (parsed.notes) html += `<p style="font-size:12px;color:var(--gray);margin-bottom:8px;font-style:italic;">${escHtml(parsed.notes)}</p>`;
+  if (parsed.items && parsed.items.length > 0) {
+    parsed.items.forEach((it, i) => {
+      html += `<div class="suggestion-card">
+        <h5>${escHtml(it.name||'')}</h5>
+        <p>${escHtml(it.desc||'')} <span class="diet-badge">${dietLabels[it.dietType]||it.dietType||''}</span></p>
+        <p style="font-size:12px;">€${(it.unitPrice||0).toFixed(2)} · ${it.type==='per_person'?'Per Person':'Fixed'} · Qty: ${it.qty||1}</p>
+        ${it.note ? `<p style="font-size:11px;color:var(--gray);">${escHtml(it.note)}</p>` : ''}
+        <button class="btn btn-lime btn-xs" style="margin-top:6px;" onclick="addAISuggestionToOffer(${i},this)">+ Add to Offer</button>
+      </div>`;
+    });
+  }
+  wrapper.innerHTML = html;
+  wrapper._aiItems = parsed.items || [];
+  wrapper.querySelectorAll('.suggestion-card button').forEach((btn, i) => {
+    btn.addEventListener('click', () => {
+      addManualItem(parsed.items[i]);
+      btn.textContent = '✓ Added';
+      btn.disabled = true;
+      btn.style.background = '#dcfce7';
+      btn.style.color = '#166534';
+    });
+  });
+  // Remove inline onclick, rely on event listeners
+  wrapper.querySelectorAll('[onclick]').forEach(el => el.removeAttribute('onclick'));
+  msgs.appendChild(wrapper);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addAISuggestionToOffer(idx, btn) {
+  // Handled via event listener in renderAISuggestion
+}
+
+// ============================================================
+// AUTOCOMPLETE — item name field
+// ============================================================
+function onItemNameInput(idx, query) {
+  offerItems[idx].name = query;
+  offerItems[idx].masterDocId = null; // unlink until a match is selected
+  updateSyncDot(idx, false);
+  updatePreview();
+  if (!query || query.length < 1) { hideAC(idx); return; }
+  const q = query.toLowerCase();
+  const matches = allCatalogItems
+    .filter(ci => (ci.name||'').toLowerCase().includes(q) && ci.active !== false)
+    .slice(0, 10);
+  if (!matches.length) { hideAC(idx); return; }
+  const drop = document.getElementById(`ac-drop-${idx}`);
+  if (!drop) return;
+  drop.innerHTML = matches.map((ci, i) => `
+    <div class="ac-item" onmousedown="selectAC(event,${idx},${allCatalogItems.indexOf(ci)})">
+      <span class="ac-name">${escHtml(ci.name)}</span>
+      <span class="ac-diet">${dietLabels[ci.dietType]||''}</span>
+      <span class="ac-price">€${(ci.unitPrice||0).toFixed(2)}${ci.type==='per_person'?'/p.P.':' fix'}</span>
+    </div>`).join('');
+  drop.style.display = 'block';
+}
+
+function hideAC(idx) {
+  const drop = document.getElementById(`ac-drop-${idx}`);
+  if (drop) drop.style.display = 'none';
+}
+
+function selectAC(event, idx, catalogIdx) {
+  event.preventDefault();
+  const ci = allCatalogItems[catalogIdx];
+  if (!ci) return;
+  // Fill all item fields from catalog
+  offerItems[idx].name      = ci.name;
+  offerItems[idx].desc      = ci.allergens ? 'Allergens: ' + ci.allergens : (ci.desc || '');
+  offerItems[idx].type      = ci.type || 'per_person';
+  offerItems[idx].unitPrice = ci.unitPrice || 0;
+  offerItems[idx].dietType  = ci.dietType || 'omni';
+  if (ci.defaultQty) offerItems[idx].qty = ci.defaultQty;
+  if (ci.portions)   offerItems[idx].portions = ci.portions;
+  // Link to master_overrides (BEO dishes) or bellabona_menu_items (custom)
+  offerItems[idx].masterDocId = ci.source === 'beo' ? ci.name : (ci.masterDocId || null);
+  // Re-render only this card
+  renderItems();
+  updatePreview();
+  hideAC(idx);
+}
+
+// ============================================================
+// MASTER SYNC — write-back to master_overrides
+// ============================================================
+const _syncTimers = {};
+
+// Reverse diet mapping: offer dietType → BEO master diet string
+const dietToMaster = {
+  vegan:'Vegan', vegetarian:'Vegetarian', halal:'Halal',
+  kosher:'Kosher', gf:'Gluten Free', fish:'Fish/Seafood',
+  omni:'', mixed:'Mixed'
+};
+
+function scheduleMasterSync(idx) {
+  if (_syncTimers[idx]) clearTimeout(_syncTimers[idx]);
+  updateSyncDot(idx, 'syncing');
+  _syncTimers[idx] = setTimeout(() => syncItemToMaster(idx), 900);
+}
+
+async function syncItemToMaster(idx) {
+  const item = offerItems[idx];
+  if (!item || !item.masterDocId) return;
+  const docId = item.masterDocId;
+  const updateData = {
+    price: item.unitPrice || 0,
+    diet: dietToMaster[item.dietType] || '',
+  };
+  // Only sync portions/qty if they are non-zero (don't overwrite with 0)
+  if (item.portions > 0) updateData.portions = item.portions;
+  if (item.qty > 0) updateData.default_qty = item.qty;
+  // Sync allergens/description back if it looks like allergen info
+  if (item.desc && item.desc.startsWith('Allergens:')) {
+    updateData.allergens = item.desc.replace('Allergens:', '').trim();
+  }
+  updateData.gluten_free = item.dietType === 'gf' ? 'Yes' : '';
+  updateData._lastUpdatedFromOffer = new Date().toISOString();
+
+  try {
+    await db.collection('master_overrides').doc(docId).set(updateData, { merge: true });
+    // Also update local catalog cache
+    const ci = allCatalogItems.find(x => x.name === docId && x.source === 'beo');
+    if (ci) {
+      ci.unitPrice = updateData.price;
+      ci.dietType  = item.dietType;
+      if (item.portions > 0) ci.portions = item.portions;
+    }
+    updateSyncDot(idx, 'synced');
+    showToast('☁ Synced "' + docId + '" to master data');
+  } catch(e) {
+    updateSyncDot(idx, 'error');
+    showToast('⚠ Sync failed: ' + e.message, true);
+  }
+}
+
+function updateSyncDot(idx, state) {
+  const dot = document.getElementById(`sync-dot-${idx}`);
+  if (!dot) return;
+  dot.className = 'sync-dot';
+  if (state === true || state === 'synced')  { dot.classList.add('synced');   dot.title = 'Synced with master data'; }
+  else if (state === 'syncing')              { dot.classList.add('syncing');   dot.title = 'Saving to master data…'; }
+  else if (state === 'error')                { dot.classList.add('unlinked');  dot.title = 'Sync failed'; }
+  else                                       { dot.classList.add('unlinked');  dot.title = 'Not linked to master data'; }
+}
 </script>
 </body>
 </html>
